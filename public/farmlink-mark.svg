@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">FarmLink Nigeria</title>
+  <desc id="desc">FarmLink Nigeria marketplace brand image</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#1f5c3d" />
+      <stop offset="100%" stop-color="#d98a22" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" rx="36" />
+  <circle cx="175" cy="142" r="78" fill="#f6f2e8" opacity="0.14" />
+  <circle cx="1078" cy="538" r="126" fill="#f6f2e8" opacity="0.1" />
+  <g fill="#f6f2e8">
+    <path d="M195 354c0-62 50-112 112-112 52 0 96 36 108 85 37 8 65 42 65 82 0 46-37 83-83 83H278c-46 0-83-37-83-83 0-26 12-50 32-65v10c0 18 14 32 32 32 17 0 31-14 31-32 0-17-14-31-31-31-11 0-21 5-27 13-24 5-37 12-37 18Z" opacity="0.18" />
+    <path d="M315 201c48 21 84 55 108 102-51-19-92-53-108-102Z" />
+  </g>
+  <text x="180" y="320" fill="#f6f2e8" font-family="Georgia, serif" font-size="86" font-weight="700">FarmLink</text>
+  <text x="180" y="388" fill="#f6f2e8" font-family="Arial, sans-serif" font-size="36" letter-spacing="6">NIGERIA</text>
+  <text x="180" y="472" fill="#f6f2e8" font-family="Arial, sans-serif" font-size="34" opacity="0.92">
+    Fresh farm produce direct from verified Nigerian farmers
+  </text>
+</svg>
