@@ -10,7 +10,6 @@ import {
   Bird,
   Beef,
   UtensilsCrossed,
-  Blocks,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -81,13 +80,6 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/75 to-foreground/30" />
         </div>
         <div className="container relative z-10 flex min-h-[90vh] flex-col items-start justify-center py-20">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-4 py-1.5 text-sm font-medium text-primary-foreground">
-              <Blocks className="h-4 w-4 text-secondary" />
-              Local-first marketplace MVP based on your PRD
-            </span>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
