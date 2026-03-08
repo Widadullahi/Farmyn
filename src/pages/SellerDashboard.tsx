@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApp } from "@/context/AppContext";
-import { formatDate, formatNaira } from "@/lib/app-data";
+import { formatDate, formatNaira, marketplaceCategories } from "@/lib/app-data";
 
 const SellerDashboard = () => {
   const {
@@ -27,12 +27,12 @@ const SellerDashboard = () => {
   const [location, setLocation] = useState(currentUser?.location || "");
   const [bio, setBio] = useState(currentUser?.bio || "");
   const [productName, setProductName] = useState("");
-  const [category, setCategory] = useState("Vegetables");
+  const [category, setCategory] = useState(marketplaceCategories[0]);
   const [price, setPrice] = useState("0");
   const [stockCount, setStockCount] = useState("0");
   const [unit, setUnit] = useState("basket");
   const [minimumOrder, setMinimumOrder] = useState("1 basket");
-  const [image, setImage] = useState("https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=900&q=80");
+  const [image, setImage] = useState("https://images.pexels.com/photos/17674119/pexels-photo-17674119.jpeg?cs=srgb&dl=pexels-gulsahaydgn-17674119.jpg&fm=jpg");
   const [description, setDescription] = useState("");
   const [adType, setAdType] = useState<"Homepage Banner" | "Sidebar Ad" | "Featured Listing">("Featured Listing");
   const [adTitle, setAdTitle] = useState("");
@@ -168,7 +168,7 @@ const SellerDashboard = () => {
           <div className="space-y-8">
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Store profile</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Transparent seller profiles are a core PRD trust feature.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Transparent seller profiles are a core trust feature.</p>
               <div className="mt-5 grid gap-4">
                 <Input placeholder="Store name" value={storeName} onChange={(event) => setStoreName(event.target.value)} />
                 <Input placeholder="Location" value={location} onChange={(event) => setLocation(event.target.value)} />
@@ -181,7 +181,7 @@ const SellerDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">Product listing and inventory</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">List inventory directly without paying for a separate seller tool.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">List produce, grains, spices, proteins, and pantry goods directly from your dashboard.</p>
                 </div>
                 <div className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
                   {sellerProducts.length} products
@@ -191,10 +191,9 @@ const SellerDashboard = () => {
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <Input placeholder="Product name" value={productName} onChange={(event) => setProductName(event.target.value)} />
                 <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value)}>
-                  <option>Vegetables</option>
-                  <option>Poultry</option>
-                  <option>Livestock</option>
-                  <option>Processed Food</option>
+                  {marketplaceCategories.map((entry) => (
+                    <option key={entry} value={entry}>{entry}</option>
+                  ))}
                 </select>
                 <Input placeholder="Price" type="number" value={price} onChange={(event) => setPrice(event.target.value)} />
                 <Input placeholder="Stock count" type="number" value={stockCount} onChange={(event) => setStockCount(event.target.value)} />
@@ -276,7 +275,7 @@ const SellerDashboard = () => {
           <div className="space-y-8">
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Bulk opportunities</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Future PRD feature, now implemented locally so you can test B2B demand early.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Browse open supply opportunities by category and location.</p>
               <div className="mt-5 space-y-3">
                 {bulkRequests.map((request) => (
                   <div key={request.id} className="rounded-xl border border-border p-4">
@@ -296,7 +295,7 @@ const SellerDashboard = () => {
 
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Price insights</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Rule-based price guidance replaces paid AI for now.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Guidance helps you stay competitive while preserving your margins.</p>
               <div className="mt-5 space-y-3">
                 {priceInsights.map((insight) => (
                   <div key={insight.id} className="rounded-xl border border-border p-4">
@@ -312,7 +311,7 @@ const SellerDashboard = () => {
 
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Advert requests</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Supports the PRD revenue model without adding another vendor right now.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Promote your listings in homepage slots, side placements, or featured results.</p>
               <div className="mt-5 grid gap-4">
                 <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={adType} onChange={(event) => setAdType(event.target.value as typeof adType)}>
                   <option>Featured Listing</option>

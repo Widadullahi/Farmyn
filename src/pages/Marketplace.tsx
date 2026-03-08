@@ -43,7 +43,7 @@ const Marketplace = () => {
         <div className="container py-8">
           <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">Marketplace</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Discover verified produce, poultry, livestock, and processed food suppliers across Nigeria. Search by seller, category, and location.
+            Discover fresh produce, poultry, livestock, and processed foods from trusted sellers across Nigeria.
           </p>
         </div>
       </div>
@@ -123,7 +123,7 @@ const Marketplace = () => {
           </p>
           <div className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
             <ShieldCheck className="h-3 w-3" />
-            Escrow-ready marketplace
+            Verified seller marketplace
           </div>
         </div>
 

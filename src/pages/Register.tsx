@@ -28,7 +28,7 @@ const Register = () => {
     const nextOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(nextOtp);
     setReadyToVerify(true);
-    toast.success(`Demo verification code: ${nextOtp}`);
+    toast.success(`Verification code: ${nextOtp}`);
   };
 
   const completeRegistration = () => {
@@ -61,15 +61,15 @@ const Register = () => {
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-md">
           <Link to="/" className="mb-10 inline-flex items-center gap-2">
-            <img src={farmLinkLogo} alt="FarmLink" className="h-8 w-8" />
+            <img src={farmLinkLogo} alt="Farmyn" className="h-8 w-8" />
             <span className="font-display text-lg font-bold text-foreground">
-              Farm<span className="text-primary">Link</span>
+              Farm<span className="text-primary">yn</span>
             </span>
           </Link>
 
           <h1 className="font-display text-2xl font-bold text-foreground">Create your account</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Email verification is handled with an on-screen OTP for now so you avoid paying for email infrastructure during MVP validation.
+            Join Farmyn as a buyer or seller and start trading with confidence.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-3">
@@ -121,7 +121,7 @@ const Register = () => {
             {role === "seller" && (
               <div className="space-y-1.5">
                 <Label htmlFor="store" className="text-xs font-medium">Store name</Label>
-                <Input id="store" placeholder="Mama Ngozi Farm" value={storeName} onChange={(event) => setStoreName(event.target.value)} required />
+                <Input id="store" placeholder="Farmyn Seller Store" value={storeName} onChange={(event) => setStoreName(event.target.value)} required />
               </div>
             )}
             <Button type="submit" className="w-full gap-2">
@@ -133,7 +133,7 @@ const Register = () => {
             <div className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-sm font-semibold text-foreground">Verify your email</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Demo OTP for cost-saving MVP mode: <span className="font-semibold text-primary">{generatedOtp}</span>
+                Demo verification code: <span className="font-semibold text-primary">{generatedOtp}</span>
               </p>
               <div className="mt-4 flex gap-3">
                 <Input placeholder="Enter OTP" value={otp} onChange={(event) => setOtp(event.target.value)} />
@@ -154,7 +154,7 @@ const Register = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-foreground/20" />
         <div className="absolute bottom-12 left-12 right-12">
           <div className="grid grid-cols-3 gap-5 text-primary-foreground">
-            {[["Accounts", "Buyer + Seller"], ["Trust", "Escrow + Reviews"], ["Growth", "Bulk + Ads"]].map(([label, value]) => (
+            {[["Buyers", "Protected Checkout"], ["Sellers", "Verified Profiles"], ["Bulk", "Business Supply"]].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-background/10 p-4 backdrop-blur">
                 <p className="text-xs uppercase tracking-wide text-primary-foreground/60">{label}</p>
                 <p className="mt-2 font-display text-xl font-bold">{value}</p>

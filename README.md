@@ -1,6 +1,6 @@
-# FarmLink Nigeria
+# Farmyn Nigeria
 
-FarmLink Nigeria is a marketplace for buying and selling fresh farm produce across Nigeria. The frontend is built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
+Farmyn Nigeria is a marketplace for buying and selling fresh farm produce across Nigeria. The frontend is built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
 
 ## Local development
 

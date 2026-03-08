@@ -32,22 +32,22 @@ const Login = () => {
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
           <Link to="/" className="mb-10 inline-flex items-center gap-2">
-            <img src={farmLinkLogo} alt="FarmLink" className="h-8 w-8" />
+            <img src={farmLinkLogo} alt="Farmyn" className="h-8 w-8" />
             <span className="font-display text-lg font-bold text-foreground">
-              Farm<span className="text-primary">Link</span>
+              Farm<span className="text-primary">yn</span>
             </span>
           </Link>
 
           <h1 className="font-display text-2xl font-bold text-foreground">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Demo accounts are preloaded so you can test flows without paying for backend auth yet.
+            Demo accounts are preloaded so you can test buyer and seller flows quickly.
           </p>
 
           <div className="mt-4 rounded-xl border border-border bg-accent/40 p-4 text-sm">
             <p className="font-semibold text-foreground">Demo buyer</p>
-            <p className="mt-1 text-muted-foreground">Email: `ada@buyer.ng` • Password: `demo1234`</p>
+            <p className="mt-1 text-muted-foreground">Email: `ada@buyer.ng` | Password: `demo1234`</p>
             <p className="mt-2 font-semibold text-foreground">Demo seller</p>
-            <p className="mt-1 text-muted-foreground">Email: `ngozi@farmlink.ng` • Password: `demo1234`</p>
+            <p className="mt-1 text-muted-foreground">Email: `ngozi@farmyn.ng` | Password: `demo1234`</p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -76,11 +76,11 @@ const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-foreground/20" />
         <div className="absolute bottom-12 left-12 right-12 rounded-3xl bg-background/10 p-6 backdrop-blur">
           <blockquote className="text-lg font-medium leading-relaxed text-primary-foreground">
-            “Local-first auth and workflow simulation let us validate product-market fit before spending on external infrastructure.”
+            "Farmyn helps trusted sellers reach more buyers while giving customers a safer way to order farm products online."
           </blockquote>
           <div className="mt-4">
-            <p className="text-sm font-semibold text-primary-foreground">FarmLink MVP</p>
-            <p className="text-xs text-primary-foreground/70">PRD-aligned prototype environment</p>
+            <p className="text-sm font-semibold text-primary-foreground">Farmyn</p>
+            <p className="text-xs text-primary-foreground/70">Trusted agricultural marketplace</p>
           </div>
         </div>
       </div>

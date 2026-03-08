@@ -14,7 +14,7 @@ import {
   UserRole,
 } from "@/lib/app-data";
 
-const STORAGE_KEY = "farmlink-local-mvp-v1";
+const STORAGE_KEY = "farmyn-local-mvp-v1";
 
 interface RegisterInput {
   role: UserRole;
@@ -110,7 +110,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       storeName: input.storeName?.trim(),
       bio:
         input.role === "seller"
-          ? "New seller on FarmLink. Update this store profile from your dashboard."
+          ? "New seller on Farmyn. Update this store profile from your dashboard."
           : undefined,
       verified: input.role === "seller" ? false : true,
       emailVerified: true,

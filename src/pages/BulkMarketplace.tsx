@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApp } from "@/context/AppContext";
-import { formatDate, formatNaira } from "@/lib/app-data";
+import { formatDate, formatNaira, marketplaceCategories } from "@/lib/app-data";
 
 const BulkMarketplace = () => {
   const { bulkRequests, currentUser, createBulkRequest } = useApp();
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Vegetables");
+  const [category, setCategory] = useState(marketplaceCategories[0]);
   const [quantity, setQuantity] = useState("");
   const [budget, setBudget] = useState("0");
   const [location, setLocation] = useState(currentUser?.location || "");
@@ -47,7 +47,7 @@ const BulkMarketplace = () => {
           <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Bulk marketplace</p>
           <h1 className="mt-3 font-display text-4xl font-bold text-foreground">Demand board for restaurants, hotels, supermarkets, and distributors</h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            The PRD places bulk demand in a later phase, but the flow is already coded here so you can validate B2B demand before spending on procurement software or custom ops tooling.
+            Buyers can publish demand for produce, fruits, grains, spices, proteins, and pantry ingredients while sellers browse open opportunities.
           </p>
         </div>
 
@@ -58,10 +58,9 @@ const BulkMarketplace = () => {
             <div className="mt-5 grid gap-4">
               <Input placeholder="Request title" value={title} onChange={(event) => setTitle(event.target.value)} />
               <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value)}>
-                <option>Vegetables</option>
-                <option>Poultry</option>
-                <option>Livestock</option>
-                <option>Processed Food</option>
+                {marketplaceCategories.map((entry) => (
+                  <option key={entry} value={entry}>{entry}</option>
+                ))}
               </select>
               <Input placeholder="Quantity needed" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
               <Input placeholder="Budget" type="number" value={budget} onChange={(event) => setBudget(event.target.value)} />

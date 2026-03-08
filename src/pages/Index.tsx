@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
 import {
+  Apple,
   ArrowRight,
+  Beef,
+  Bird,
   CheckCircle2,
   Leaf,
-  ShieldCheck,
-  Truck,
-  TrendingUp,
   Salad,
-  Bird,
-  Beef,
-  UtensilsCrossed,
+  ShieldCheck,
+  Soup,
+  TrendingUp,
+  Truck,
+  Wheat,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -20,35 +22,43 @@ import CategoryCard from "@/components/CategoryCard";
 import { useApp } from "@/context/AppContext";
 import heroImage from "@/assets/hero-farm.jpg";
 
-const categoryIcons = [Salad, Bird, Beef, UtensilsCrossed];
+const categoryIcons = {
+  Vegetables: Salad,
+  Fruits: Apple,
+  "Grains & Cereals": Wheat,
+  "Spices & Seasonings": Soup,
+  "Poultry & Eggs": Bird,
+  "Livestock & Meat": Beef,
+  "Pantry Ingredients": Soup,
+} as const;
 
 const features = [
   {
     icon: ShieldCheck,
-    title: "Escrow Payments",
-    description: "Funds are held until delivery is confirmed, reducing fraud risk for buyers and sellers.",
+    title: "Secure Escrow Payments",
+    description: "Buyer funds remain protected until delivery is confirmed, reducing fraud risk on both sides.",
   },
   {
     icon: Truck,
-    title: "Order Tracking",
-    description: "Track every order stage from seller confirmation to delivery and escrow release.",
+    title: "Tracked Fulfilment",
+    description: "Follow every order from seller confirmation through dispatch, delivery, and payout release.",
   },
   {
     icon: Leaf,
     title: "Verified Seller Profiles",
-    description: "Transparent profiles, badges, and review history build trust in every transaction.",
+    description: "Seller badges, store information, and review history help buyers shop with confidence.",
   },
   {
     icon: TrendingUp,
-    title: "Price Transparency",
-    description: "Local-first pricing insights help sellers benchmark prices without paying for AI APIs yet.",
+    title: "Transparent Pricing",
+    description: "Clear pricing and minimum order details make it easier to compare offers and buy in bulk.",
   },
 ];
 
 const trustPoints = [
-  "Buyer and seller accounts with owned local-first workflows",
-  "Escrow-style checkout and delivery confirmation",
-  "Bulk request board for restaurants and distributors",
+  "Verified sellers across produce, fruits, grains, spices, proteins, and pantry staples",
+  "Protected checkout with delivery confirmation before payout",
+  "Bulk order support for restaurants, hotels, supermarkets, and distributors",
 ];
 
 const Index = () => {
@@ -65,9 +75,9 @@ const Index = () => {
 
   const stats = [
     { value: `${products.filter((product) => product.sellerVerified).length}+`, label: "Verified Listings" },
+    { value: `${categories.length}`, label: "Shopping Categories" },
     { value: `${bulkRequests.length}+`, label: "Open Bulk Requests" },
-    { value: "5%", label: "Commission Per Completed Order" },
-    { value: "100%", label: "Code You Control" },
+    { value: "24/7", label: "Order Visibility" },
   ];
 
   return (
@@ -86,8 +96,8 @@ const Index = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="max-w-3xl font-display text-4xl font-extrabold leading-[1.1] text-primary-foreground sm:text-5xl lg:text-[3.5rem]"
           >
-            Farm commerce for Nigeria,{" "}
-            <span className="text-secondary">without paying for platform lock-in first</span>
+            Fresh farm produce,
+            <span className="text-secondary"> sourced directly from trusted sellers across Nigeria</span>
           </motion.h1>
 
           <motion.p
@@ -96,7 +106,7 @@ const Index = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-5 max-w-2xl text-base leading-relaxed text-primary-foreground/75 sm:text-lg"
           >
-            Farmers, poultry producers, livestock sellers, food vendors, households, restaurants, and supermarkets can now use a single FarmLink flow for listings, cart, escrow checkout, reviews, order tracking, and bulk requests.
+            Farmyn connects farmers, poultry producers, livestock sellers, food vendors, households, restaurants, and supermarkets through one trusted marketplace for discovery, protected checkout, delivery tracking, reviews, and bulk sourcing.
           </motion.p>
 
           <motion.div
@@ -106,17 +116,16 @@ const Index = () => {
             className="mt-8 flex flex-wrap gap-3"
           >
             <Link to="/marketplace">
-              <Button size="lg" className="gap-2 shadow-lg">
+              <Button size="lg" className="gap-2 bg-secondary text-secondary-foreground shadow-lg hover:bg-secondary/90">
                 Browse Marketplace <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/seller/dashboard">
+            <Link to="/register">
               <Button
                 size="lg"
-                variant="outline"
-                className="border-primary-foreground/25 text-primary-foreground hover:bg-primary-foreground/10"
+                className="border border-primary-foreground/20 bg-primary-foreground text-foreground shadow-lg hover:bg-primary-foreground/90"
               >
-                Open Seller Dashboard
+                Start Selling
               </Button>
             </Link>
           </motion.div>
@@ -160,16 +169,19 @@ const Index = () => {
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Categories</p>
           <h2 className="font-display text-3xl font-bold text-foreground">Shop by Category</h2>
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {categories.map((category, index) => (
-            <CategoryCard
-              key={category.name}
-              name={category.name}
-              icon={categoryIcons[index] || Salad}
-              count={category.count}
-              href={`/marketplace?category=${encodeURIComponent(category.name)}`}
-            />
-          ))}
+        <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-4">
+          {categories.map((category) => {
+            const Icon = categoryIcons[category.name as keyof typeof categoryIcons] || Salad;
+            return (
+              <CategoryCard
+                key={category.name}
+                name={category.name}
+                icon={Icon}
+                count={category.count}
+                href={`/marketplace?category=${encodeURIComponent(category.name)}`}
+              />
+            );
+          })}
         </div>
       </section>
 
@@ -177,8 +189,8 @@ const Index = () => {
         <div className="container">
           <div className="mb-10 flex items-end justify-between">
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">MVP Features</p>
-              <h2 className="font-display text-3xl font-bold text-foreground">Working Marketplace Flow</h2>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Fresh Picks</p>
+              <h2 className="font-display text-3xl font-bold text-foreground">Featured Listings</h2>
             </div>
             <Link to="/marketplace" className="hidden sm:block">
               <Button variant="outline" className="gap-1.5">
@@ -196,10 +208,10 @@ const Index = () => {
 
       <section className="container py-20">
         <div className="mb-12 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why FarmLink</p>
-          <h2 className="font-display text-3xl font-bold text-foreground">Built Around the PRD</h2>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why Farmyn</p>
+          <h2 className="font-display text-3xl font-bold text-foreground">Built for Trusted Agricultural Commerce</h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-            The current codebase now covers the PRD MVP directly in your own frontend: buyer and seller accounts, product listings, escrow-style checkout, order tracking, reviews, bulk demand capture, and seller monetization requests.
+            Farmyn helps sellers reach more buyers while giving households and businesses a safer way to order fresh food online.
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -226,10 +238,10 @@ const Index = () => {
         <div className="rounded-3xl border border-border bg-card p-8 shadow-card">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Bulk Marketplace</p>
-              <h2 className="font-display text-3xl font-bold text-foreground">Restaurant and distributor demand board</h2>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Bulk Orders</p>
+              <h2 className="font-display text-3xl font-bold text-foreground">Demand board for restaurants and distributors</h2>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-                Bulk requests are live in the app already, so you can test B2B demand capture before paying for a custom logistics or procurement stack.
+                Restaurants, hotels, supermarkets, and distributors can post demand and discover supply opportunities from trusted sellers.
               </p>
             </div>
             <Link to="/bulk">
@@ -244,7 +256,7 @@ const Index = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">{request.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{request.category} • {request.location}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{request.category} | {request.location}</p>
                   </div>
                   <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
                     {request.status}

@@ -13,7 +13,7 @@ const Navbar = () => {
 
   const links = [
     { label: "Marketplace", href: "/marketplace" },
-    { label: "Bulk Requests", href: "/bulk" },
+    { label: "Bulk Orders", href: "/bulk" },
     { label: "About", href: "/about" },
   ];
 
@@ -25,9 +25,9 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="container flex h-[4.5rem] items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={farmLinkLogo} alt="FarmLink Nigeria" className="h-8 w-8" />
+          <img src={farmLinkLogo} alt="Farmyn Nigeria" className="h-8 w-8" />
           <span className="font-display text-lg font-bold tracking-tight text-foreground">
-            Farm<span className="text-primary">Link</span>
+            Farm<span className="text-primary">yn</span>
           </span>
         </Link>
 
@@ -76,7 +76,7 @@ const Navbar = () => {
                 </div>
                 {currentUser.role === "seller" ? (
                   <Link to="/seller/dashboard">
-                    <Button size="sm">Seller Dashboard</Button>
+                    <Button size="sm">Dashboard</Button>
                   </Link>
                 ) : (
                   <Link to="/register">
@@ -140,7 +140,7 @@ const Navbar = () => {
                 <div className="space-y-2">
                   {currentUser.role === "seller" && (
                     <Link to="/seller/dashboard" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full" size="sm">Seller Dashboard</Button>
+                      <Button className="w-full" size="sm">Dashboard</Button>
                     </Link>
                   )}
                   <Button
