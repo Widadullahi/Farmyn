@@ -44,10 +44,10 @@ const BulkMarketplace = () => {
       <Navbar />
       <div className="container py-10">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Bulk marketplace</p>
-          <h1 className="mt-3 font-display text-4xl font-bold text-foreground">Demand board for restaurants, hotels, supermarkets, and distributors</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Wholesale Sourcing</p>
+          <h1 className="mt-3 font-display text-4xl font-bold text-foreground">Request bulk produce & find verified suppliers</h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Buyers can publish demand for produce, fruits, grains, spices, proteins, and pantry ingredients while sellers browse open opportunities.
+            Tell local farmers what you need, your target volume, and budget. Growers will respond directly with quotes.
           </p>
         </div>
 

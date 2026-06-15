@@ -17,6 +17,8 @@ import {
   Star,
   Lock,
   Sparkles,
+  Globe,
+  ArrowLeftRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -25,7 +27,6 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import CategoryCard from "@/components/CategoryCard";
 import { useApp } from "@/context/AppContext";
-import heroImage from "@/assets/hero-farm.jpg";
 
 const categoryIcons = {
   Vegetables: Salad,
@@ -41,34 +42,34 @@ const features = [
   {
     icon: Lock,
     title: "Secure Escrow Payments",
-    description: "Buyer funds remain protected until delivery is confirmed, reducing fraud risk on both sides.",
+    description: "Your money is safe. We hold payments securely and only release funds to the farmer after you confirm delivery.",
   },
   {
     icon: Truck,
-    title: "Tracked Fulfilment",
-    description: "Follow every order from seller confirmation through dispatch, delivery, and payout release.",
+    title: "Real-time Updates",
+    description: "Track your order from the farm gate all the way to your doorstep or warehouse.",
   },
   {
     icon: ShieldCheck,
-    title: "Verified Seller Profiles",
-    description: "Seller badges, store information, and review history help buyers shop with confidence.",
+    title: "Shop with Confidence",
+    description: "We verify growers, view their badges, and check honest reviews before you buy.",
   },
   {
     icon: TrendingUp,
-    title: "Transparent Pricing",
-    description: "Clear pricing and minimum order details make it easier to compare offers and buy in bulk.",
+    title: "Direct Pricing",
+    description: "No hidden fees or unexpected costs. Easily compare offers and minimum order quantities.",
   },
 ];
 
 const trustPoints = [
-  "Verified sellers across produce and proteins",
-  "Escrow-protected checkout",
-  "Bulk order demand board",
+  "Strict seller verification",
+  "Your payments are protected",
+  "Post bulk orders & get bids",
 ];
 
 const heroBackgrounds = [
-  heroImage,
-  "https://images.unsplash.com/photo-1595855759920-86582396756a?w=1600&q=80", // African sunset agricultural field
+  "/hero-farm.jpg",
+  "/gemini-farm.png",
   "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&q=80", // Lush green crop field irrigation
 ];
 
@@ -153,22 +154,12 @@ const Index = () => {
               className="absolute inset-0 h-full w-full object-cover"
             />
           ))}
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/95 via-foreground/80 to-foreground/45 animate-fade-in" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 animate-fade-in" />
         </div>
 
         <div className="container relative z-10 grid gap-12 lg:grid-cols-12 lg:gap-8 items-center min-h-[75vh]">
           {/* Left Column: Text & Interactive Search Bar */}
           <div className="lg:col-span-7 flex flex-col items-start justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-secondary mb-6"
-            >
-              <Sparkles className="h-3 w-3 text-secondary animate-pulse" />
-              Direct access. No middleman. Secure Escrow.
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -185,7 +176,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mt-6 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg"
             >
-              Farmyn connects crop growers, livestock owners, and food vendors directly with households, restaurants, and wholesale buyers under a secure escrow-protected trade system.
+              Farmyn connects households, restaurants, and wholesale buyers directly with verified Nigerian growers. Buy fresh produce, livestock, and grains with secure payment protection.
             </motion.p>
 
             {/* Interactive Search Bar widget */}
@@ -271,8 +262,8 @@ const Index = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-foreground">1. Escrow Funded</p>
-                      <p className="text-[11px] text-muted-foreground">NGN 48,500 safely held by Farmyn</p>
+                      <p className="text-xs font-semibold text-foreground">1. Secure Payment</p>
+                      <p className="text-[11px] text-muted-foreground">Payment held securely by Farmyn</p>
                     </div>
                   </div>
 
@@ -281,7 +272,7 @@ const Index = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-foreground">2. Produce in Transit</p>
+                      <p className="text-xs font-semibold text-foreground">2. Order Shipped</p>
                       <p className="text-[11px] text-muted-foreground">Dispatched from Jos, Plateau</p>
                     </div>
                   </div>
@@ -291,7 +282,7 @@ const Index = () => {
                       <span className="h-2 w-2 rounded-full bg-secondary" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-foreground">3. Buyer Delivery Verification</p>
+                      <p className="text-xs font-semibold text-foreground">3. Confirm Delivery</p>
                       <p className="text-[11px] text-muted-foreground">Awaiting buyer confirmation to release payout</p>
                     </div>
                   </div>
@@ -361,24 +352,26 @@ const Index = () => {
       </section>
 
       {/* Shop by Category Section */}
-      <section className="container py-20">
-        <div className="mb-10 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Categories</p>
-          <h2 className="font-display text-3xl font-bold text-foreground">Shop by Category</h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-4">
-          {categories.map((category) => {
-            const Icon = categoryIcons[category.name as keyof typeof categoryIcons] || Salad;
-            return (
-              <CategoryCard
-                key={category.name}
-                name={category.name}
-                icon={Icon}
-                count={category.count}
-                href={`/marketplace?category=${encodeURIComponent(category.name)}`}
-              />
-            );
-          })}
+      <section className="bg-accent/15 dark:bg-accent/5 border-t border-b border-border/20 py-20">
+        <div className="container">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Categories</p>
+            <h2 className="font-display text-3xl font-bold text-foreground">Shop by Category</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-4">
+            {categories.map((category) => {
+              const Icon = categoryIcons[category.name as keyof typeof categoryIcons] || Salad;
+              return (
+                <CategoryCard
+                  key={category.name}
+                  name={category.name}
+                  icon={Icon}
+                  count={category.count}
+                  href={`/marketplace?category=${encodeURIComponent(category.name)}`}
+                />
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -405,40 +398,113 @@ const Index = () => {
       </section>
 
       {/* Why Farmyn Section */}
-      <section className="container py-20">
-        <div className="mb-12 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why Farmyn</p>
-          <h2 className="font-display text-3xl font-bold text-foreground">Built for Trusted Agricultural Commerce</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-            Farmyn helps sellers reach more buyers while giving households and businesses a safer way to order fresh food online.
-          </p>
+      <section className="bg-muted/35 dark:bg-muted/10 border-t border-b border-border/20 py-20">
+        <div className="container">
+          <div className="mb-12 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why Farmyn</p>
+            <h2 className="font-display text-3xl font-bold text-foreground">A safer, simpler way to trade</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
+              We eliminate the risk of online farm purchases by holding payments in escrow and verifying every single seller on our platform.
+            </p>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, i) => {
+              const cardColors = [
+                "border-t-emerald-600 dark:border-t-emerald-500",
+                "border-t-amber-500",
+                "border-t-orange-500",
+                "border-t-primary"
+              ];
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -6 }}
+                  className={`rounded-xl border-x border-b border-t-4 border-border bg-card p-6 text-center shadow-card transition-all duration-300 hover:shadow-elevated ${cardColors[i % cardColors.length]}`}
+                >
+                  <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-accent">
+                    <feature.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-card-foreground">{feature.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{feature.description}</p>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature, i) => {
-            const cardColors = [
-              "border-t-emerald-600 dark:border-t-emerald-500",
-              "border-t-amber-500",
-              "border-t-orange-500",
-              "border-t-primary"
-            ];
-            return (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -6 }}
-                className={`rounded-xl border-x border-b border-t-4 border-border bg-card p-6 text-center shadow-card transition-all duration-300 hover:shadow-elevated ${cardColors[i % cardColors.length]}`}
-              >
-                <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-accent">
-                  <feature.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-sm font-semibold text-card-foreground">{feature.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{feature.description}</p>
-              </motion.div>
-            );
-          })}
+      </section>
+
+      {/* Trust, Reach & Swap Guarantees Section */}
+      <section className="bg-gradient-subtle py-20 border-t border-b border-border/50">
+        <div className="container">
+          <div className="mb-12 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Guaranteed Safety & Nationwide Scale</p>
+            <h2 className="font-display text-3xl font-bold text-foreground">Trade without boundaries, with zero risk</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
+              Farmyn is built specifically to address the challenges of trust, distance, and logistics in Nigerian agriculture.
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Nationwide Reach Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl border border-border bg-card p-8 shadow-card flex flex-col items-start gap-4 transition-all duration-300 hover:shadow-elevated"
+            >
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <Globe className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Reach Any State in Nigeria</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Farmers are no longer restricted to local markets. List your produce and sell directly to clients, restaurants, and wholesalers in Lagos, Abuja, Port Harcourt, or any other state. We help coordinate logistics for smooth interstate delivery.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Zero Dupes Escrow Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="rounded-2xl border border-border bg-card p-8 shadow-card flex flex-col items-start gap-4 transition-all duration-300 hover:shadow-elevated"
+            >
+              <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Zero Risk Escrow (No Scams)</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Say goodbye to scams and dupes. Buyers fund the secure escrow before dispatch, proving they have the money. However, the farmer does not receive the payout until the buyer verifies that the goods have arrived safely. No one gets cheated.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Crop & Input Swapping Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="rounded-2xl border border-border bg-card p-8 shadow-card flex flex-col items-start gap-4 transition-all duration-300 hover:shadow-elevated"
+            >
+              <div className="h-12 w-12 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                <ArrowLeftRight className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Direct Crop & Input Swapping</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Optimize your resources by swapping surplus crops, high-quality seeds, fertilizers, or farm equipment directly with other growers. Barter trade is secure and fully tracked through verified marketplace listings.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -447,10 +513,10 @@ const Index = () => {
         <div className="rounded-3xl border border-border bg-gradient-to-r from-card to-accent/20 p-8 shadow-card">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Bulk Orders</p>
-              <h2 className="font-display text-3xl font-bold text-foreground">Demand board for restaurants and distributors</h2>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Bulk Requests</p>
+              <h2 className="font-display text-3xl font-bold text-foreground">Source produce in bulk</h2>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-                Restaurants, hotels, supermarkets, and distributors can post demand and discover supply opportunities from trusted sellers.
+                Restaurants, hotels, and retail stores can post their wholesale requirements and get direct quotes from verified local farmers.
               </p>
             </div>
             <Link to="/bulk">

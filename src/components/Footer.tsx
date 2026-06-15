@@ -18,7 +18,7 @@ const Footer = () => {
               </span>
             </Link>
             <p className="mb-5 text-sm leading-relaxed text-primary-foreground/60">
-              Farmyn Nigeria connects trusted sellers directly with households and businesses looking for fresh produce, poultry, livestock, and processed foods.
+              Farmyn connects verified local farmers directly with households and businesses looking for fresh produce, poultry, livestock, and grains.
             </p>
             <div className="flex gap-2">
               <Input
@@ -65,7 +65,7 @@ const Footer = () => {
           </p>
           <div className="flex gap-6">
             <span className="text-xs text-primary-foreground/40">Made in Nigeria</span>
-            <span className="text-xs text-primary-foreground/40">Trusted farm-to-buyer commerce</span>
+            <span className="text-xs text-primary-foreground/40">Safe, direct farm trade</span>
           </div>
         </div>
       </div>

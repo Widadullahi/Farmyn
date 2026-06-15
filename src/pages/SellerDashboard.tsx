@@ -168,7 +168,7 @@ const SellerDashboard = () => {
           <div className="space-y-8">
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Store profile</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Transparent seller profiles are a core trust feature.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Transparent profiles help you build trust with buyers.</p>
               <div className="mt-5 grid gap-4">
                 <Input placeholder="Store name" value={storeName} onChange={(event) => setStoreName(event.target.value)} />
                 <Input placeholder="Location" value={location} onChange={(event) => setLocation(event.target.value)} />
@@ -295,7 +295,7 @@ const SellerDashboard = () => {
 
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Price insights</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Guidance helps you stay competitive while preserving your margins.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Suggested pricing based on current marketplace demand.</p>
               <div className="mt-5 space-y-3">
                 {priceInsights.map((insight) => (
                   <div key={insight.id} className="rounded-xl border border-border p-4">
@@ -311,7 +311,7 @@ const SellerDashboard = () => {
 
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold text-foreground">Advert requests</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Promote your listings in homepage slots, side placements, or featured results.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Increase your visibility and reach more buyers across the platform.</p>
               <div className="mt-5 grid gap-4">
                 <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={adType} onChange={(event) => setAdType(event.target.value as typeof adType)}>
                   <option>Featured Listing</option>

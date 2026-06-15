@@ -44,7 +44,7 @@ const Marketplace = () => {
         <div className="container py-8">
           <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">Marketplace</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Discover fresh produce, poultry, livestock, and processed foods from trusted sellers across Nigeria.
+            Buy fresh produce, poultry, livestock, and grains directly from verified local growers across Nigeria.
           </p>
         </div>
       </div>
