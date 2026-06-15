@@ -12,8 +12,9 @@ import { useApp } from "@/context/AppContext";
 const Marketplace = () => {
   const [params] = useSearchParams();
   const initialCategory = params.get("category");
+  const initialSearch = params.get("search") || "";
   const { products, categories, addToCart } = useApp();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory || "All");
   const [location, setLocation] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
