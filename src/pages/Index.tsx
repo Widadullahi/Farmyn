@@ -18,7 +18,7 @@ import {
   Lock,
   Sparkles,
   Globe,
-  ArrowLeftRight,
+  MapPin,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -486,7 +486,7 @@ const Index = () => {
               </div>
             </motion.div>
 
-            {/* Crop & Input Swapping Card */}
+            {/* Location-Based Discovery Card */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -495,12 +495,12 @@ const Index = () => {
               className="rounded-2xl border border-border bg-card p-8 shadow-card flex flex-col items-start gap-4 transition-all duration-300 hover:shadow-elevated"
             >
               <div className="h-12 w-12 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
-                <ArrowLeftRight className="h-6 w-6" />
+                <MapPin className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">Direct Crop & Input Swapping</h3>
+                <h3 className="text-lg font-bold text-foreground">Location-Based Discovery</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Optimize your resources by swapping surplus crops, high-quality seeds, fertilizers, or farm equipment directly with other growers. Barter trade is secure and fully tracked through verified marketplace listings.
+                  Easily find crop growers, poultry farms, and food vendors near your location or search by state. Save on transportation, cut down logistics times, and source the freshest products straight from local farms.
                 </p>
               </div>
             </motion.div>
