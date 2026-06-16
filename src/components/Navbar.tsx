@@ -17,6 +17,10 @@ const Navbar = () => {
     { label: "About", href: "/about" },
   ];
 
+  if (currentUser) {
+    links.push({ label: "Chat", href: "/chat" });
+  }
+
   if (currentUser?.role === "seller") {
     links.push({ label: "Dashboard", href: "/seller/dashboard" });
   }

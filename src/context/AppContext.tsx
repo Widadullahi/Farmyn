@@ -12,6 +12,7 @@ import {
   Review,
   User,
   UserRole,
+  ChatMessage,
 } from "@/lib/app-data";
 
 const STORAGE_KEY = "farmyn-local-mvp-v1";
@@ -62,6 +63,7 @@ interface AppContextValue extends AppState {
   addReview: (productId: string, rating: number, comment: string) => { ok: boolean; message: string };
   createBulkRequest: (input: Omit<BulkRequest, "id" | "buyerId" | "buyerName" | "status" | "createdAt">) => { ok: boolean; message: string };
   createAdRequest: (type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing", title: string, budget: number) => { ok: boolean; message: string };
+  sendChatMessage: (receiverId: string, message: string) => { ok: boolean; message: string };
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -505,6 +507,34 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     return { ok: true, message: "Advertisement request submitted." };
   };
 
+  const sendChatMessage = (receiverId: string, message: string) => {
+    if (!currentUser) {
+      return { ok: false, message: "Please log in to send a message." };
+    }
+
+    const receiver = state.users.find((user) => user.id === receiverId);
+    if (!receiver) {
+      return { ok: false, message: "Recipient user not found." };
+    }
+
+    const newMessage: ChatMessage = {
+      id: createId("chat"),
+      senderId: currentUser.id,
+      senderName: currentUser.role === "seller" ? (currentUser.storeName || currentUser.name) : currentUser.name,
+      receiverId: receiver.id,
+      receiverName: receiver.role === "seller" ? (receiver.storeName || receiver.name) : receiver.name,
+      message: message.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setState((prev) => ({
+      ...prev,
+      chatMessages: [...prev.chatMessages, newMessage],
+    }));
+
+    return { ok: true, message: "Message sent." };
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -527,6 +557,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         addReview,
         createBulkRequest,
         createAdRequest,
+        sendChatMessage,
       }}
     >
       {children}

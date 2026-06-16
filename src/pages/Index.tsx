@@ -69,7 +69,6 @@ const trustPoints = [
 
 const heroBackgrounds = [
   "/hero-farm.jpg",
-  "/gemini-farm.png",
   "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&q=80", // Lush green crop field irrigation
 ];
 
@@ -352,23 +351,38 @@ const Index = () => {
       </section>
 
       {/* Shop by Category Section */}
-      <section className="bg-accent/15 dark:bg-accent/5 border-t border-b border-border/20 py-20">
+      <section className="bg-[hsl(145_48%_26%)] dark:bg-emerald-950/20 border-t border-b border-border/20 py-20">
         <div className="container">
           <div className="mb-10 text-center">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Categories</p>
-            <h2 className="font-display text-3xl font-bold text-foreground">Shop by Category</h2>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary/90">Categories</p>
+            <h2 className="font-display text-3xl font-bold text-white">Shop by Category</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-4">
             {categories.map((category) => {
               const Icon = categoryIcons[category.name as keyof typeof categoryIcons] || Salad;
               return (
-                <CategoryCard
-                  key={category.name}
-                  name={category.name}
-                  icon={Icon}
-                  count={category.count}
-                  href={`/marketplace?category=${encodeURIComponent(category.name)}`}
-                />
+                <div key={category.name} className="h-full">
+                  <Link
+                    to={`/marketplace?category=${encodeURIComponent(category.name)}`}
+                    className="h-full"
+                  >
+                    <motion.div
+                      whileHover={{ y: -4 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="group flex h-full min-h-[176px] flex-col items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/95 p-6 shadow-card transition-colors duration-300 hover:border-secondary/30 hover:bg-white"
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent transition-all duration-300 group-hover:bg-primary group-hover:shadow-lg">
+                        <Icon className="h-6 w-6 text-primary transition-colors duration-300 group-hover:text-primary-foreground" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-sm font-semibold text-foreground">{category.name}</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {category.count} {category.count === 1 ? "product" : "products"}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </Link>
+                </div>
               );
             })}
           </div>
@@ -376,9 +390,9 @@ const Index = () => {
       </section>
 
       {/* Featured Listings Section */}
-      <section className="bg-gradient-subtle py-20">
+      <section className="bg-background py-12">
         <div className="container">
-          <div className="mb-10 flex items-end justify-between">
+          <div className="mb-8 flex items-end justify-between">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Fresh Picks</p>
               <h2 className="font-display text-3xl font-bold text-foreground">Featured Listings</h2>
@@ -389,7 +403,7 @@ const Index = () => {
               </Button>
             </Link>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
             ))}
@@ -398,8 +412,16 @@ const Index = () => {
       </section>
 
       {/* Why Farmyn Section */}
-      <section className="bg-muted/35 dark:bg-muted/10 border-t border-b border-border/20 py-20">
-        <div className="container">
+      <section className="relative border-t border-b border-border/20 py-20 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/farm-fields.jpg"
+            alt="Farm fields background"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-background/80"></div>
+        </div>
+        <div className="container relative z-10">
           <div className="mb-12 text-center">
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why Farmyn</p>
             <h2 className="font-display text-3xl font-bold text-foreground">A safer, simpler way to trade</h2>
@@ -510,41 +532,43 @@ const Index = () => {
 
       {/* Bulk Demand Board Section */}
       <section className="container pb-20">
-        <div className="rounded-3xl border border-border bg-gradient-to-r from-card to-accent/20 p-8 shadow-card">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Bulk Requests</p>
-              <h2 className="font-display text-3xl font-bold text-foreground">Source produce in bulk</h2>
-              <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-                Restaurants, hotels, and retail stores can post their wholesale requirements and get direct quotes from verified local farmers.
-              </p>
+        <div className="relative rounded-3xl bg-gradient-to-br from-primary/90 via-primary to-secondary overflow-hidden shadow-elevated">
+          <div className="relative z-10 p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/90">Bulk Requests</p>
+                <h2 className="font-display text-4xl font-bold text-white">Source produce in bulk</h2>
+                <p className="mt-3 max-w-2xl text-sm text-white/80">
+                  Restaurants, hotels, and retail stores can post their wholesale requirements and get direct quotes from verified local farmers.
+                </p>
+              </div>
+              <Link to="/bulk">
+                <Button className="gap-2 bg-white text-primary hover:bg-white/90 font-semibold">
+                  View Bulk Requests <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </div>
-            <Link to="/bulk">
-              <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                View Bulk Requests <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {bulkRequests.slice(0, 2).map((request) => (
-              <motion.div
-                key={request.id}
-                whileHover={{ y: -2 }}
-                className="rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-subtle"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">{request.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{request.category} | {request.location}</p>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {bulkRequests.slice(0, 2).map((request) => (
+                <motion.div
+                  key={request.id}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  className="rounded-2xl bg-white/95 backdrop-blur-sm p-6 shadow-card transition-all duration-300 hover:shadow-elevated"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">{request.title}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{request.category} | {request.location}</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-bold">
+                      {request.status}
+                    </span>
                   </div>
-                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                    {request.status}
-                  </span>
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground">{request.quantity}</p>
-                <p className="mt-2 text-sm font-medium text-primary">Budget: NGN {request.budget.toLocaleString()}</p>
-              </motion.div>
-            ))}
+                  <p className="mt-4 text-sm text-muted-foreground">{request.quantity}</p>
+                  <p className="mt-3 text-xl font-bold text-primary">Budget: NGN {request.budget.toLocaleString()}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

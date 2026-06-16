@@ -1,5 +1,6 @@
-import { MapPin, ShieldCheck, ShoppingCart, Star } from "lucide-react";
+import { MapPin, ShieldCheck, ShoppingCart, Star, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Product, formatNaira } from "@/lib/app-data";
 
@@ -66,15 +67,27 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               {product.unit} • MOQ {product.minimumOrder}
             </p>
           </div>
-          <Button
-            size="sm"
-            disabled={!product.inStock}
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => onAddToCart?.(product.id)}
-          >
-            <ShoppingCart className="h-3 w-3" />
-            Add
-          </Button>
+          <div className="flex gap-1.5">
+            <Link to={`/chat?user=${product.sellerId}`}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 hover:bg-accent/40"
+                title="Message Seller"
+              >
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              disabled={!product.inStock}
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => onAddToCart?.(product.id)}
+            >
+              <ShoppingCart className="h-3 w-3" />
+              Add
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

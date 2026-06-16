@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -99,6 +101,17 @@ const BulkMarketplace = () => {
                   </div>
                 </div>
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{request.notes}</p>
+                
+                {currentUser && currentUser.id !== request.buyerId && (
+                  <div className="mt-4 flex justify-end border-t border-border/40 pt-4">
+                    <Link to={`/chat?user=${request.buyerId}`}>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Message Buyer
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             ))}
           </div>

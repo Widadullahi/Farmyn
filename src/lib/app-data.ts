@@ -113,6 +113,16 @@ export interface AdRequest {
   createdAt: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  receiverName: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface AppState {
   users: User[];
   currentUserId: string | null;
@@ -122,6 +132,7 @@ export interface AppState {
   reviews: Review[];
   bulkRequests: BulkRequest[];
   adRequests: AdRequest[];
+  chatMessages: ChatMessage[];
 }
 
 const sellerNgoziId = "seller-ngozi";
@@ -317,7 +328,7 @@ export const seedProducts: Product[] = [
     unit: "basket",
     minimumOrder: "1 basket",
     description: "A mixed basket of peppers for stew bases, restaurants, and home kitchens.",
-    featured: false,
+    featured: true,
   },
   {
     id: "prod-broiler",
@@ -355,7 +366,7 @@ export const seedProducts: Product[] = [
     unit: "30-egg tray",
     minimumOrder: "2 trays",
     description: "Clean, fresh eggs for homes, bakeries, and food businesses.",
-    featured: false,
+    featured: true,
   },
   {
     id: "prod-cow",
@@ -519,6 +530,54 @@ export const seedAdRequests: AdRequest[] = [
   },
 ];
 
+export const seedChatMessages: ChatMessage[] = [
+  {
+    id: "chat-1",
+    senderId: buyerAdaId,
+    senderName: "Ada Nwosu",
+    receiverId: sellerNgoziId,
+    receiverName: "Mama Ngozi Farm",
+    message: "Hello Mama Ngozi, do you have fresh basket of tomatoes in stock today?",
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+  },
+  {
+    id: "chat-2",
+    senderId: sellerNgoziId,
+    senderName: "Mama Ngozi Farm",
+    receiverId: buyerAdaId,
+    receiverName: "Ada Nwosu",
+    message: "Yes my daughter! Fresh from Jos. We just loaded 30 baskets this morning. You can place your order now, and we will package it immediately.",
+    createdAt: new Date(Date.now() - 3600000 * 1.8).toISOString(),
+  },
+  {
+    id: "chat-3",
+    senderId: buyerAdaId,
+    senderName: "Ada Nwosu",
+    receiverId: sellerNgoziId,
+    receiverName: "Mama Ngozi Farm",
+    message: "Excellent! I will place an order for 2 baskets via escrow protection now.",
+    createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
+  },
+  {
+    id: "chat-4",
+    senderId: buyerAdaId,
+    senderName: "Ada Nwosu",
+    receiverId: sellerAgroId,
+    receiverName: "AgroPoultry Ltd",
+    message: "Hello, I want to inquire about bulk ordering broilers for a restaurant delivery. Do you deliver to Lekki, Lagos?",
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago
+  },
+  {
+    id: "chat-5",
+    senderId: sellerAgroId,
+    senderName: "AgroPoultry Ltd",
+    receiverId: buyerAdaId,
+    receiverName: "Ada Nwosu",
+    message: "Yes we do, Ada. We supply live broilers weekly to Lagos. For orders over 20 birds, delivery is fully coordinated and covered by our logistics partner.",
+    createdAt: new Date(Date.now() - 3600000 * 4.5).toISOString(),
+  },
+];
+
 export const initialAppState: AppState = {
   users: seedUsers,
   currentUserId: buyerAdaId,
@@ -528,6 +587,7 @@ export const initialAppState: AppState = {
   reviews: seedReviews,
   bulkRequests: seedBulkRequests,
   adRequests: seedAdRequests,
+  chatMessages: seedChatMessages,
 };
 
 export const orderStatusFlow: Order["status"][] = [

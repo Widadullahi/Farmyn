@@ -29,54 +29,56 @@ Proposed Solution
 FarmLink Nigeria provides a centralized online marketplace where farmers and food vendors can
 list agricultural products and buyers can purchase them securely.
 Key elements of the solution include:
- Verified farmer profiles
- Product listing and search functionality
- Secure escrow payment system
- Buyer review and rating system
- Location-based product discovery
- Order tracking and dispute resolution
+  Verified farmer profiles
+  Product listing and search functionality
+  Secure escrow payment system
+  Buyer review and rating system
+  Location-based product discovery
+  Order tracking and dispute resolution
 The platform creates a structured digital market for agricultural commerce.
 Product Vision
 To become Nigeria's most trusted digital infrastructure for agricultural commerce by connecting
 millions of farmers directly with consumers and businesses.
 Target Users
 Primary Users:
- Crop farmers
- Poultry farmers
- Livestock owners
- Fish farmers
- Vegetable growers
- Food vendors
+  Crop farmers
+  Poultry farmers
+  Livestock owners
+  Fish farmers
+  Vegetable growers
+  Food vendors
 Secondary Users:
- Households
- Restaurants
-
-
- Hotels
- Supermarkets
- Bulk food buyers
- Food distributors
+  Households
+  Restaurants
+  Hotels
+  Supermarkets
+  Bulk food buyers
+  Food distributors
 Core Platform Features
 User Accounts
- Buyer and seller registration
- Email verification using one-time codes
- Secure authentication
+  Buyer and seller registration
+  Email verification using one-time codes
+  Secure authentication
 Seller Tools
- Seller store profiles
- Product listing and inventory management
- Order management dashboard
- Sales analytics
+  Seller store profiles
+  Product listing and inventory management
+  Order management dashboard
+  Sales analytics
 Buyer Tools
- Product search and filtering
- Secure checkout
- Order tracking
- Reviews and ratings
+  Product search and filtering
+  Secure checkout
+  Order tracking
+  Reviews and ratings
 Trust Features
- Verified seller badges
- Escrow payment protection
- Dispute resolution system
- Transparent seller profiles
+  Verified seller badges
+  Escrow payment protection
+  Dispute resolution system
+  Transparent seller profiles
+Communication Features
+  In-site chat portal enabling direct negotiations between buyers and sellers
+  Direct messaging threads accessible from product listings and seller dashboards
 Future Features
+
 
 
 AI Price Insights

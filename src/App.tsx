@@ -12,6 +12,7 @@ import Cart from "./pages/Cart";
 import SellerDashboard from "./pages/SellerDashboard";
 import About from "./pages/About";
 import BulkMarketplace from "./pages/BulkMarketplace";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
