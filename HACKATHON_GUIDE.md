@@ -451,4 +451,20 @@ Where things live now:
 
 ---
 
-## 16. Sandbox stuck? Your options ranked (ap
+## 16. Sandbox stuck? Your options ranked (appended)
+
+A. TRY SHARED KEY (2 min, clean slate possible): docs publish a shared sandbox key
+   for exploring (see api-reference/introduction: pk_a025cac...). It is a DIFFERENT
+   partner namespace, so Bunch/Samson may be fresh there. Swap .env BMONI_API_KEY,
+   restart, Run as Bunch. If 409 again, others used it too — move to B.
+B. DEMO-MOCK FOR THE SHOW (recommended): empty BMONI_API_KEY → full escrow +
+   purses UX works with zero network. Crowd clicks freely, nothing breaks.
+   Judges care about the FLOW (lock → release → payout → purses), mock shows it.
+C. NEW SANDBOX KEY: ask mentor/support for a second key = fresh namespace,
+   zero collisions. Takes hours — request now as backup.
+D. PRODUCTION REAL MONEY (not for the crowd): needs a PROD key from the BMONI
+   team + your OWN real BVN/bank + tiny amounts, on https://embedded.bmoni.com.
+   Never collect visitors' BVNs or real cash at a booth (privacy, compliance,
+   irreversible transfers). Only a team-owned demo account, and only if the
+   prod key arrives in time. For judging, sandbox/mock is expected and accepted.
+
