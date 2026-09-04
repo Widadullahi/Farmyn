@@ -49,8 +49,8 @@ interface AppContextValue extends AppState {
   currentUser: User | null;
   categories: string[];
   cartCount: number;
-  registerUser: (input: RegisterInput) => { ok: boolean; message: string };
-  login: (email: string, password: string) => { ok: boolean; message: string };
+  registerUser: (input: RegisterInput) => { ok: boolean; message: string; user?: User };
+  login: (email: string, password: string) => { ok: boolean; message: string; user?: User };
   logout: () => void;
   addToCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -135,7 +135,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       currentUserId: user.id,
     }));
 
-    return { ok: true, message: "Account created successfully." };
+    return { ok: true, message: "Account created successfully.", user };
   };
 
   const login = (email: string, password: string) => {
@@ -154,7 +154,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setState((prev) => ({ ...prev, currentUserId: user.id }));
-    return { ok: true, message: "Logged in successfully." };
+    return { ok: true, message: "Logged in successfully.", user };
   };
 
   const logout = () => {

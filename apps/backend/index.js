@@ -149,7 +149,7 @@ function matchUser(users, phone, email) {
   const wantEmail = email ? String(email).toLowerCase() : null;
   return users.find((u) => {
     const strings = collectStrings(u);
-    const phoneHit = wantDigits && strings.some((s) => /^\d[\d\s+\-()]*$/.test(s.trim()) && last10(s) === wantDigits);
+    const phoneHit = wantDigits && strings.some((s) => /^[+\d][\d\s+\-()]*$/.test(s.trim()) && last10(s) === wantDigits);
     const emailHit = wantEmail && strings.some((s) => String(s).toLowerCase() === wantEmail);
     return phoneHit || emailHit;
   });
@@ -169,14 +169,24 @@ app.get('/api/bmoni/users/recover', async (req, res) => {
     if (!needKey(res)) return;
     const { phone, email } = req.query;
     if (!phone && !email) return res.status(400).json({ error: 'pass ?phone= or ?email=' });
-    const users = extractUsers(await bmoni('/v1/users?limit=100&page=1'));
-    const hit = matchUser(users, phone, email);
-    if (!hit) return res.status(404).json({ error: 'no live user matches that phone/email (checked first 100). Ask support@bkey.me.', debug: debugUsers(users) });
-    const bmoniUserId = userIdOf(hit);
-    if (phone) userCache[`phone:${phone}`] = bmoniUserId;
-    if (email) userCache[`email:${email}`] = bmoniUserId;
-    saveUserCache();
-    res.json({ bmoniUserId, reused: true, note: 'Recovered live from GET /v1/users.' });
+    // Shared sandbox keys hold hundreds of users from many partners, so scan
+    // several pages (not just the first 100) before giving up.
+    let checked = 0;
+    for (let page = 1; page <= 10; page++) {
+      const users = extractUsers(await bmoni(`/v1/users?limit=100&page=${page}`));
+      if (!users.length) break;
+      checked += users.length;
+      const hit = matchUser(users, phone, email);
+      if (hit) {
+        const bmoniUserId = userIdOf(hit);
+        if (phone) userCache[`phone:${phone}`] = bmoniUserId;
+        if (email) userCache[`email:${email}`] = bmoniUserId;
+        saveUserCache();
+        return res.json({ bmoniUserId, reused: true, note: `Recovered live from GET /v1/users (page ${page}).` });
+      }
+      if (users.length < 100) break;
+    }
+    return res.status(404).json({ error: `no live user matches that phone/email (checked ${checked}). The number may belong to another partner on this shared sandbox key — ask support@bkey.me for your own key, or link via bmoniUserId paste.` });
   } catch (e) { res.status(e.status || 500).json({ error: e.message, data: e.data }); }
 });
 // Inspect / delete / reactivate one user (for resetting stuck sandbox accounts)
@@ -244,7 +254,26 @@ app.post('/api/bmoni/wallet', async (req, res) => {
     });
     // WARNING: never persist raw private keys in prod — return owner key only for sandbox demo
     res.json({ ...wallet, _demoOwnerPrivateKey: owner.privateKey, _demoOwnerAddress: owner.address });
-  } catch (e) { res.status(e.status || 500).json({ error: e.message, data: e.data }); }
+  } catch (e) {
+    // 409/E502 = this user already has a wallet for the currency (one per
+    // currency). Reuse it via the balances endpoint — no owner key available
+    // for a reused wallet, so release-signing stays disabled for it.
+    if (e.status === 409 || /already exists/i.test(e.message || '')) {
+      try {
+        const b = await bmoni(`/v1/users/${req.body?.bmoniUserId}/smart-wallets/account/balances`);
+        const addr = b.smartAccountAddress || b.address || b.smartWalletAddress;
+        const list = Array.isArray(b) ? b : b.balances || b.data || b.items || [];
+        const w = list.find((x) => /NGN|CNGN/i.test(x.currency || '')) || list[0];
+        if (w?.smartWalletId) {
+          return res.json({
+            smartWalletId: w.smartWalletId, address: addr, reused: true,
+            note: 'Wallet already existed (409). Reusing it — owner-key release signing unavailable for reused wallets.',
+          });
+        }
+      } catch (_) {}
+    }
+    res.status(e.status || 500).json({ error: e.message, data: e.data });
+  }
 });
 
 // 3. Onboard Nigeria rail — POST /onboarding/start-nigeria
@@ -261,6 +290,12 @@ app.post('/api/bmoni/onboard-ngn', async (req, res) => {
 });
 
 // 4a. Status / balances / deposit account
+app.get('/api/bmoni/kyc/bvn-lookup/:userId/:bvn', async (req, res) => {
+  try {
+    if (!needKey(res)) return;
+    res.json(await bmoni(`/v1/users/${req.params.userId}/kyc/bvn-lookup/${req.params.bvn}`));
+  } catch (e) { res.status(e.status || 500).json({ error: e.message, data: e.data }); }
+});
 app.get('/api/bmoni/status/:userId', async (req, res) => {
   try {
     if (!needKey(res)) return;
@@ -291,7 +326,7 @@ app.post('/api/bmoni/escrow/lock', async (req, res) => {
     const proposal = await bmoni(`/v1/users/${bmoniUserId}/smart-wallets/${smartWalletId}/proposals`, {
       method: 'POST', body: { proposal: { type: 'TRANSFER', toAddress, amount: String(amount), currency: 'CNGN', description } },
     });
-    const proposalId = proposal.id || proposal.proposalId;
+    const proposalId = proposal?.proposal?.id || proposal?.id || proposal?.proposalId || proposal?.proposal?.proposalId;
     await bmoni(`/v1/users/${bmoniUserId}/smart-wallets/proposals/${proposalId}/approve`, { method: 'POST' });
     res.json({ proposalId, status: 'PENDING_SIGNATURES' });
   } catch (e) { res.status(e.status || 500).json({ error: e.message, data: e.data }); }

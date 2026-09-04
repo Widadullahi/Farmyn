@@ -99,7 +99,9 @@ export default function BmoniCheckoutPage() {
       const wallet = await bmoni.createWallet(bmoniUserId);
       const smartWalletId = (wallet as any).smartWalletId || (wallet as any).id;
       const walletAddress = (wallet as any).address || (wallet as any).smartWalletAddress;
-      push(`Wallet ready: ${smartWalletId}`);
+      if (!smartWalletId) throw new Error('Wallet provisioning returned no id.');
+      if ((wallet as any).reused) push('Wallet already existed — reusing it (owner-key release signing unavailable for reused wallets).');
+      else push(`Wallet ready: ${smartWalletId}`);
       const next = { bmoniUserId, smartWalletId, walletAddress, ownerPrivateKey: (wallet as any)._demoOwnerPrivateKey };
       saveIds(next);
       setStep(3);
@@ -267,7 +269,7 @@ export default function BmoniCheckoutPage() {
             </div>
             <details className="mt-3 text-xs text-muted-foreground">
               <summary className="cursor-pointer font-semibold">Testing on sandbox?</summary>
-              <p className="mt-1">Verification only passes with matching registered details — your mentor can provide a sandbox test identity.</p>
+              <p className="mt-1">Only two personas verify: Bunch Dillon (+2348000000000, BVN 95888168924) and Samson Jabo (+2348000000001, BVN 22222222222). Numbers are first-come on the shared key — a 409 means another team holds it; use “Find my account” below.</p>
             </details>
 
             <div className="mt-5 flex flex-wrap gap-3">

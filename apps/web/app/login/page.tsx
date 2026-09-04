@@ -26,7 +26,7 @@ export default function LoginPage() {
     }
 
     toast.success(result.message);
-    router.push("/");
+    router.push(result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
   };
 
   return (

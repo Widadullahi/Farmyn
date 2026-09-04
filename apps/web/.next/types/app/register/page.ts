@@ -1,4 +1,4 @@
-// File: C:\Users\DELL\Music\Farm-Link\apps\web\app\register\page.tsx
+// File: /home/biltronix/Documents/Farm-Link/apps/web/app/register/page.tsx
 import * as entry from '../../../../app/register/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -55,7 +55,7 @@ export default function RegisterPage() {
     }
 
     toast.success(result.message);
-    router.push(role === "seller" ? "/seller/dashboard" : "/marketplace");
+    router.push(role === "seller" ? "/seller/dashboard" : "/dashboard");
   };
 
   return (

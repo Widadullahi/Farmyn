@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Megaphone, Menu, Package, PiggyBank, Plus, ShieldCheck, ShoppingCart, TrendingUp, MessageSquare, MapPin, User, Send, X } from "lucide-react";
+import { ArrowUpRight, Megaphone, Menu, Package, PanelLeftOpen, PiggyBank, Plus, ShieldCheck, ShoppingCart, TrendingUp, MessageSquare, MapPin, User, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -253,7 +253,41 @@ export default function SellerDashboardPage() {
         </div>
       </aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile icon rail — always visible, expands to full menu on toggle */}
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-16 flex-col items-center border-r border-border bg-card py-4 lg:hidden">
+        <img src="/farmlink-logo.png" alt="Farmyn" className="h-8 w-8" />
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open full menu"
+          title="Open full menu"
+          className="mt-4 rounded-md p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <PanelLeftOpen className="h-5 w-5" />
+        </button>
+        <nav className="mt-2 flex flex-1 flex-col items-center gap-1 overflow-y-auto">
+          {NAV_ITEMS.map((tab) => {
+            const Icon = tab.icon;
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => go(tab.id)}
+                aria-label={tab.label}
+                title={tab.label}
+                className={`rounded-md p-2.5 transition-colors ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Mobile drawer — full menu, toggle back to icons */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
@@ -263,7 +297,7 @@ export default function SellerDashboardPage() {
                 <img src="/farmlink-logo.png" alt="Farmyn" className="h-7 w-7" />
                 <span className="font-display text-base font-bold">Farm<span className="text-primary">yn</span></span>
               </span>
-              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted">
+              <button onClick={() => setMobileOpen(false)} aria-label="Hide full menu" title="Hide full menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -278,7 +312,7 @@ export default function SellerDashboardPage() {
       )}
 
       {/* Main column */}
-      <div className="lg:pl-64">
+      <div className="pl-16 lg:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted lg:hidden">
             <Menu className="h-5 w-5" />
