@@ -1,0 +1,30 @@
+
+
+1/1
+
+Next.js 15.5.19 (outdated)
+Webpack
+Runtime ChunkLoadError
+
+
+Loading chunk app/layout failed.
+(timeout: http://localhost:3000/_next/static/chunks/app/layout.js)
+
+app\layout.tsx (30:9) @ RootLayout
+
+
+  28 |     <html lang="en">
+  29 |       <body>
+> 30 |         <Providers>{children}</Providers>
+     |         ^
+  31 |       </body>
+  32 |     </html>
+  33 |   );
+Call Stack
+13
+
+Show 12 ignore-listed frame(s)
+RootLayout
+app\layout.tsx (30:9)
+1
+2

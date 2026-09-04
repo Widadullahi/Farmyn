@@ -1,6 +1,13 @@
 # Farmyn Nigeria
 
-Farmyn Nigeria is a marketplace for buying and selling fresh farm produce across Nigeria. The frontend is built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
+Farmyn Nigeria is a marketplace for buying and selling fresh farm produce across Nigeria.
+
+## Monorepo Structure
+
+This is a Turborepo monorepo with the following apps:
+
+- `apps/web`: Next.js 15 frontend
+- `apps/backend`: Express.js backend (placeholder)
 
 ## Local development
 
@@ -11,8 +18,6 @@ npm run dev
 
 ## Scripts
 
-- `npm run dev` starts the Vite dev server.
-- `npm run build` creates a production build.
-- `npm run preview` previews the production build locally.
-- `npm run lint` runs ESLint.
-- `npm run test` runs the Vitest test suite.
+- `npm run dev` starts both frontend and backend dev servers
+- `npm run build` creates production builds for all apps
+- `npm run lint` runs ESLint for all apps
