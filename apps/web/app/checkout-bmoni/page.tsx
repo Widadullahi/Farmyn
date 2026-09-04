@@ -114,17 +114,25 @@ export default function BmoniCheckoutPage() {
       }
       push('Activating Naira rail (BVN verified) + fetching virtual account…');
       await bmoni.onboardNGN(bmoniUserId, cleanBvn, walletAddress || '');
-      const vba = await bmoni.depositAccount(bmoniUserId);
+      const vbaRaw = await bmoni.depositAccount(bmoniUserId);
+      const vbaList = (vbaRaw as any)?.accounts || (vbaRaw as any)?.data?.accounts || [];
+      const vba = Array.isArray(vbaList) && vbaList.length > 0 ? vbaList[0] : (vbaRaw as any);
       push(`Naira rail active. Buyer pays ${(vba as any).accountNumber || (vba as any).account_number} → credited as CNGN.`);
       const withVba = { ...next, vba };
       saveIds(withVba);
       setStep(4);
 
       push(`Locking ${formatNaira(Number(amount) || 0)} in escrow…`);
+      // BMONI E101 rejects self-transfers: recipient must differ from the group wallet.
+      // Demo farmer payout address (distinct from the buyer group wallet above).
+      const FARMER_DEMO_ADDRESS = '0x1111111111111111111111111111111111111111';
+      const toAddress = walletAddress && walletAddress.toLowerCase() !== FARMER_DEMO_ADDRESS.toLowerCase()
+        ? FARMER_DEMO_ADDRESS
+        : '0x2222222222222222222222222222222222222222';
       const lock = await bmoni.lockEscrow({
         bmoniUserId,
         smartWalletId,
-        toAddress: walletAddress,
+        toAddress,
         amount: Number(amount).toFixed(2),
         description: 'Farmyn escrow order',
       });
