@@ -180,7 +180,9 @@ export function MoneyAccountCard({ ownerKey, profile }: { ownerKey: string; prof
     setLoading(true); setMsg('');
     try {
       await bmoni.onboardNGN(acct.bmoniUserId, clean, acct.walletAddress || '');
-      const vba = await bmoni.depositAccount(acct.bmoniUserId);
+      const vbaRaw = await bmoni.depositAccount(acct.bmoniUserId);
+      const vbaList = (vbaRaw as any)?.accounts || (vbaRaw as any)?.data?.accounts || [];
+      const vba = Array.isArray(vbaList) && vbaList.length > 0 ? vbaList[0] : (vbaRaw as any);
       save({ ...acct, vba, railActive: true });
       await refreshBalances(acct.bmoniUserId);
       setMsg('Naira rail active. Your virtual account is ready to receive.');
