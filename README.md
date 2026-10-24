@@ -1,23 +1,21 @@
 # Farmyn Nigeria
 
-Farmyn Nigeria is a marketplace for buying and selling fresh farm produce across Nigeria.
+A farm-produce marketplace with buyer/seller dashboards, listings, local chat and Paystack hosted checkout.
 
-## Monorepo Structure
+## Development
 
-This is a Turborepo monorepo with the following apps:
+- `apps/web`: Next.js frontend on port 3000.
+- `apps/backend`: Express Paystack test integration on port 3001.
 
-- `apps/web`: Next.js 15 frontend
-- `apps/backend`: Express.js backend (placeholder)
+Install with `npm ci`, configure the two `.env.example` files, then run `npm run dev`.
 
-## Local development
+See [PAYSTACK_SETUP.md](PAYSTACK_SETUP.md) for keys, callbacks, webhooks, testing and the remaining production requirements. Keep the secret key on the backend only.
 
-```sh
-npm i
-npm run dev
-```
+The payment adapter is test-only. Marketplace accounts, chat and listings still use browser storage; payment records use a local server file and a test catalogue. A production database/authentication service and seller settlement workflow are required before accepting live payments.
 
-## Scripts
+## Commands
 
-- `npm run dev` starts both frontend and backend dev servers
-- `npm run build` creates production builds for all apps
-- `npm run lint` runs ESLint for all apps
+- `npm run dev`: start both apps.
+- `npm run build`: build the frontend.
+- `npm test --workspace backend`: test payment initialization and verification with a fake provider.
+- `npm run lint`: run project linting (the inherited lint setup requires repair).

@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
           <Link href="/" className="mb-10 inline-flex items-center gap-2">
-            <img src="/farmlink-logo.png" alt="Farmyn" className="h-8 w-8" />
+            <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
             <span className="font-display text-lg font-bold text-foreground">
               Farm<span className="text-primary">yn</span>
             </span>

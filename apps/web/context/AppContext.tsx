@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { startCheckout, verifyCheckout } from "@/lib/paystack";
 import {
   allCategories,
   AppState,
@@ -47,6 +48,7 @@ interface ProductInput {
 
 interface AppContextValue extends AppState {
   currentUser: User | null;
+  isHydrated: boolean;
   categories: string[];
   cartCount: number;
   registerUser: (input: RegisterInput) => { ok: boolean; message: string; user?: User };
@@ -56,7 +58,8 @@ interface AppContextValue extends AppState {
   updateCartQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
-  checkout: (input: CheckoutInput) => { ok: boolean; message: string };
+  checkout: (input: CheckoutInput) => Promise<{ ok: boolean; message: string; authorizationUrl?: string }>;
+  confirmPayment: (reference: string) => Promise<{ ok: boolean; message: string }>;
   addProduct: (input: ProductInput) => { ok: boolean; message: string };
   updateSellerProfile: (patch: Partial<User>) => void;
   advanceOrderStatus: (orderId: string) => void;
@@ -74,33 +77,28 @@ const loadState = (): AppState => {
     return initialAppState;
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return initialAppState;
-  }
-
   try {
-    return JSON.parse(raw) as AppState;
-  } catch {
-    return initialAppState;
-  }
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialAppState;
+    const loaded = JSON.parse(raw) as AppState;
+    if (![loaded.users, loaded.products, loaded.orders, loaded.cart, loaded.reviews, loaded.bulkRequests, loaded.adRequests, loaded.chatMessages].every(Array.isArray)) return initialAppState;
+    return {
+      ...loaded,
+      currentUserId: loaded.users.some(u => u.id === loaded.currentUserId) ? loaded.currentUserId : null,
+      orders: loaded.orders.map(order => ({ ...order, paymentStatus: ["Paid", "Awaiting Payment", "Unverified"].includes(order.paymentStatus) ? order.paymentStatus : "Unverified" })),
+    };
+  } catch { return initialAppState; }
 };
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  const [state, setState] = useState<AppState>(() => {
-    const loaded = loadState();
-    // Check if currentUserId is valid
-    const currentUserValid = loaded.currentUserId ? loaded.users.some(u => u.id === loaded.currentUserId) : false;
-    if (!currentUserValid) {
-      // Reset to initial state if current user is invalid
-      return initialAppState;
-    }
-    return loaded;
-  });
-
+  const [state, setState] = useState<AppState>(initialAppState);
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => { setState(loadState()); setIsHydrated(true); }, []);
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    if (!isHydrated) return;
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch { toast.error("Your browser could not save changes. Enable site storage before checkout."); }
+  }, [state, isHydrated]);
 
   const currentUser = state.users.find((user) => user.id === state.currentUserId) ?? null;
   const cartCount = state.cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -200,6 +198,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    const product = state.products.find(p => p.id === productId);
+    if (!product || !Number.isSafeInteger(quantity)) return;
+    quantity = Math.min(quantity, product.stockCount);
     setState((prev) => ({
       ...prev,
       cart: prev.cart.map((item) =>
@@ -219,84 +220,43 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setState((prev) => ({ ...prev, cart: [] }));
   };
 
-  const checkout = (input: CheckoutInput) => {
-    if (!currentUser || currentUser.role !== "buyer") {
-      return { ok: false, message: "Log in as a buyer to place an order." };
+  const checkout = async (input: CheckoutInput) => {
+    if (!isHydrated || !currentUser || currentUser.role !== "buyer") return { ok: false, message: "Log in as a buyer to check out." };
+    if (input.deliveryAddress.trim().length < 5) return { ok: false, message: "Enter a complete delivery address." };
+    if (!state.cart.length) return { ok: false, message: "Your cart is empty." };
+    for (const item of state.cart) {
+      const product = state.products.find(p => p.id === item.productId);
+      if (!product || !product.inStock || !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > product.stockCount) return { ok: false, message: "Check your cart quantities and stock availability." };
     }
-
-    if (!currentUser.emailVerified) {
-      return { ok: false, message: "Verify your email before checking out." };
-    }
-
-    const cartProducts = state.cart
-      .map((item) => ({
-        item,
-        product: state.products.find((product) => product.id === item.productId),
-      }))
-      .filter((entry): entry is { item: AppState["cart"][number]; product: Product } => Boolean(entry.product));
-
-    if (cartProducts.length === 0) {
-      return { ok: false, message: "Your cart is empty." };
-    }
-
-    const groupedBySeller = new Map<string, { sellerName: string; items: Order["items"] }>();
-
-    cartProducts.forEach(({ item, product }) => {
-      if (!groupedBySeller.has(product.sellerId)) {
-        groupedBySeller.set(product.sellerId, {
-          sellerName: product.sellerName,
-          items: [],
-        });
-      }
-
-      groupedBySeller.get(product.sellerId)?.items.push({
-        productId: product.id,
-        name: product.name,
-        quantity: item.quantity,
-        unitPrice: product.price,
-        sellerId: product.sellerId,
-        sellerName: product.sellerName,
+    try {
+      const result = await startCheckout({
+        customer: { id: currentUser.id, name: currentUser.name, email: currentUser.email },
+        items: state.cart, deliveryAddress: input.deliveryAddress.trim(), note: input.note?.trim() || "",
       });
-    });
+      return { ok: true, message: "Opening Paystack secure checkout…", authorizationUrl: result.authorizationUrl };
+    } catch (error) { return { ok: false, message: error instanceof Error ? error.message : "Checkout is unavailable. Please retry." }; }
+  };
 
-    const createdAt = new Date().toISOString();
-    const orders: Order[] = Array.from(groupedBySeller.entries()).map(([sellerId, group]) => {
-      const subtotal = group.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-      const commission = subtotal * 0.05;
-      const deliveryFee = 2500;
-
+  const confirmPayment = async (reference: string) => {
+    if (!currentUser || !/^farmyn_[a-f0-9]{32}$/.test(reference)) throw new Error("Sign in to verify a valid payment reference.");
+    const receipt = await verifyCheckout(reference, currentUser.id);
+    if (receipt.status !== "paid") return { ok: false, message: "Paystack has not confirmed a successful payment. Your cart is still saved. You can check again shortly." };
+    if (!Array.isArray(receipt.orders) || !receipt.orders.length || receipt.orders.some(o => o.buyerId !== currentUser.id || o.paymentReference !== reference || o.paymentStatus !== "Paid")) throw new Error("The verified order details did not match your account.");
+    setState(prev => {
+      const fresh = receipt.orders.filter(order => !prev.orders.some(existing => existing.id === order.id));
+      if (!fresh.length) return prev;
+      const purchased = new Map<string, number>();
+      fresh.forEach(order => order.items.forEach(item => purchased.set(item.productId, (purchased.get(item.productId) || 0) + item.quantity)));
       return {
-        id: createId("order"),
-        buyerId: currentUser.id,
-        buyerName: currentUser.name,
-        sellerId,
-        sellerName: group.sellerName,
-        items: group.items,
-        subtotal,
-        commission,
-        deliveryFee,
-        total: subtotal + commission + deliveryFee,
-        deliveryAddress: input.deliveryAddress.trim(),
-        note: input.note?.trim(),
-        status: "Pending Seller Confirmation",
-        paymentStatus: "Held in Escrow",
-        createdAt,
-        timeline: [
-          {
-            label: "Order placed and payment moved into escrow",
-            date: createdAt,
-          },
-        ],
+        ...prev, orders: [...fresh, ...prev.orders],
+        cart: prev.cart.map(item => ({ ...item, quantity: Math.max(0, item.quantity - (purchased.get(item.productId) || 0)) })).filter(item => item.quantity > 0),
+        products: prev.products.map(product => {
+          const stockCount = Math.max(0, product.stockCount - (purchased.get(product.id) || 0));
+          return { ...product, stockCount, inStock: stockCount > 0 };
+        }),
       };
     });
-
-    setState((prev) => ({
-      ...prev,
-      orders: [...orders, ...prev.orders],
-      cart: [],
-    }));
-
-    return { ok: true, message: `${orders.length} escrow-protected order(s) created.` };
+    return { ok: true, message: "Paystack verified your test payment. Your order is now saved and ready for seller confirmation." };
   };
 
   const addProduct = (input: ProductInput) => {
@@ -351,7 +311,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setState((prev) => ({
       ...prev,
       orders: prev.orders.map((order) => {
-        if (order.id !== orderId) {
+        if (order.id !== orderId || !currentUser || currentUser.role !== "seller" || order.sellerId !== currentUser.id || order.paymentStatus !== "Paid" || order.status === "Delivered" || order.status === "Completed") {
           return order;
         }
 
@@ -364,8 +324,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         return {
           ...order,
           status: nextStatus,
-          paymentStatus:
-            nextStatus === "Completed" ? "Released to Seller" : order.paymentStatus,
+          paymentStatus: order.paymentStatus,
           timeline: [
             {
               label:
@@ -375,7 +334,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                     ? "Order moved in transit"
                     : nextStatus === "Delivered"
                       ? "Seller marked order delivered"
-                      : "Escrow released to seller after buyer confirmation"
+                      : "Buyer confirmation pending"
               ,
               date: new Date().toISOString(),
             },
@@ -387,17 +346,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const markOrderCompleted = (orderId: string) => {
+    const target = state.orders.find(order => order.id === orderId);
+    if (!target || target.buyerId !== currentUser?.id || currentUser?.role !== "buyer" || target.status !== "Delivered" || target.paymentStatus !== "Paid") { toast.error("Only the buyer can confirm delivery of a paid, delivered order."); return; }
     setState((prev) => ({
       ...prev,
       orders: prev.orders.map((order) =>
-        order.id === orderId
+        order.id === orderId && currentUser?.id === order.buyerId && currentUser.role === "buyer" && order.status === "Delivered" && order.paymentStatus === "Paid"
           ? {
               ...order,
               status: "Completed",
-              paymentStatus: "Released to Seller",
+              paymentStatus: order.paymentStatus,
               timeline: [
                 {
-                  label: "Buyer confirmed delivery and escrow was released",
+                  label: "Buyer confirmed delivery",
                   date: new Date().toISOString(),
                 },
                 ...order.timeline,
@@ -407,7 +368,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       ),
     }));
 
-    toast.success("Order completed and escrow released.");
+    toast.success("Delivery confirmation recorded. Seller settlement is handled separately.");
   };
 
   const addReview = (productId: string, rating: number, comment: string) => {
@@ -550,6 +511,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         ...state,
         currentUser,
+        isHydrated,
         categories: [...allCategories],
         cartCount,
         registerUser,
@@ -560,6 +522,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         removeFromCart,
         clearCart,
         checkout,
+        confirmPayment,
         addProduct,
         updateSellerProfile,
         advanceOrderStatus,

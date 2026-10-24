@@ -1,14 +1,14 @@
-FarmLink Nigeria Comprehensive Product
+Farmyn Nigeria Comprehensive Product
  Requirements Document (PRD)
 Executive Summary
-FarmLink Nigeria is a digital marketplace designed to connect farmers, livestock producers, and
+Farmyn Nigeria is a digital marketplace designed to connect farmers, livestock producers, and
 food vendors directly with buyers across Nigeria.
 The platform allows agricultural producers to list products while buyers can discover, compare, and
 purchase fresh produce safely.
 The system includes secure payment infrastructure, seller verification, buyer reviews, and delivery
 confirmation. Payments are held in escrow and released only when buyers confirm successful
 delivery. This model builds trust in online agricultural commerce.
-FarmLink aims to solve a major inefficiency in Nigeria's agricultural supply chain: farmers lack direct
+Farmyn aims to solve a major inefficiency in Nigeria's agricultural supply chain: farmers lack direct
 access to markets while buyers lack trusted sources of fresh farm produce.
 Problem Statement
 Nigeria's agricultural sector faces several structural problems:
@@ -26,7 +26,7 @@ exploitation.
 
 
 Proposed Solution
-FarmLink Nigeria provides a centralized online marketplace where farmers and food vendors can
+Farmyn Nigeria provides a centralized online marketplace where farmers and food vendors can
 list agricultural products and buyers can purchase them securely.
 Key elements of the solution include:
   Verified farmer profiles
@@ -94,7 +94,7 @@ Farmers can announce newly harvested produce to attract buyers quickly.
 Farm Map
 Interactive map showing farms and products near buyers.
 Revenue Model
-FarmLink will generate revenue through:
+Farmyn will generate revenue through:
 Transaction Commission
 The platform charges a 5 percent commission on every completed order.
 Seller Advertising
@@ -159,7 +159,7 @@ Key opportunities include:
  Rapid growth of digital commerce
  Increasing demand for fresh food delivery
  Large restaurant and hospitality industries
-FarmLink aims to digitize agricultural trade and capture value from this growing market.
+Farmyn aims to digitize agricultural trade and capture value from this growing market.
 Product Roadmap
 Phase 1 (MVP)
 User accounts, product listings, escrow payments, order management, and reviews.
@@ -180,6 +180,6 @@ Platform growth will be measured using:
 
 
 Long■Term Vision
-FarmLink aims to become a foundational digital infrastructure for agricultural commerce in Africa.
+Farmyn aims to become a foundational digital infrastructure for agricultural commerce in Africa.
 By improving market access, transparency, and trust, the platform can significantly increase farmer
 income while making fresh food more accessible to consumers.

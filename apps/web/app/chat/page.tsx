@@ -14,17 +14,17 @@ function ChatContent() {
   const params = useSearchParams();
   const targetUserId = params.get("user");
 
-  const { currentUser, chatMessages, users, sendChatMessage } = useApp();
+  const { currentUser, isHydrated, chatMessages, users, sendChatMessage } = useApp();
   const [activeUserId, setActiveUserId] = useState<string | null>(targetUserId);
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Redirect if not logged in
   useEffect(() => {
-    if (!currentUser) {
+    if (isHydrated && !currentUser) {
       router.push("/login");
     }
-  }, [currentUser, router]);
+  }, [currentUser, isHydrated, router]);
 
   // Handle URL change to select target user
   useEffect(() => {

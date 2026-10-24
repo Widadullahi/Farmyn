@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import DashboardOverview from "@/components/DashboardOverview";
 import { ArrowUpRight, Megaphone, Menu, Package, PanelLeftOpen, PiggyBank, Plus, ShieldCheck, ShoppingCart, TrendingUp, MessageSquare, MapPin, User, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { BmoniModeBadge } from "@/components/BmoniModeBadge";
-import { MoneyAccountCard } from "@/components/MoneyAccountCard";
-import { PursesWidget } from "@/components/PursesWidget";
+import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,14 +31,13 @@ export default function SellerDashboardPage() {
     logout,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "orders" | "purses" | "ads" | "chat" | "profile">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "orders" | "ads" | "chat" | "profile">("overview");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const NAV_ITEMS = [
     { id: "overview", label: "Overview", icon: TrendingUp },
     { id: "inventory", label: "Inventory", icon: Package },
-    { id: "orders", label: "Orders & Escrow", icon: ShoppingCart },
-    { id: "purses", label: "Purses", icon: PiggyBank },
+    { id: "orders", label: "Orders & Payments", icon: ShoppingCart },
     { id: "ads", label: "Marketing & Ads", icon: Megaphone },
     { id: "chat", label: "Direct Messages", icon: MessageSquare },
     { id: "profile", label: "Store Profile", icon: User },
@@ -60,6 +58,7 @@ export default function SellerDashboardPage() {
         return (
           <button
             key={tab.id}
+            aria-current={isSelected ? "page" : undefined}
             onClick={() => onNavigate(tab.id)}
             className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors ${
               isSelected
@@ -132,20 +131,6 @@ export default function SellerDashboardPage() {
   const sellerProducts = products.filter((product) => product.sellerId === currentUser.id);
   const sellerOrders = orders.filter((order) => order.sellerId === currentUser.id);
   const sellerAdRequests = adRequests.filter((request) => request.sellerId === currentUser.id);
-  const totalSales = sellerOrders.reduce((sum, order) => sum + order.subtotal, 0);
-  const heldInEscrow = sellerOrders
-    .filter((order) => order.paymentStatus === "Held in Escrow")
-    .reduce((sum, order) => sum + order.total, 0);
-  const avgTicket = sellerOrders.length ? totalSales / sellerOrders.length : 0;
-
-  const priceInsights = sellerProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    currentPrice: product.price,
-    suggestedMin: Math.round(product.price * 0.95),
-    suggestedMax: Math.round(product.price * 1.08),
-  }));
-
   const saveProfile = () => {
     updateSellerProfile({
       storeName,
@@ -224,11 +209,11 @@ export default function SellerDashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="dashboard-workspace min-h-screen">
       {/* Desktop sidebar — full height */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+      <aside className="dashboard-sidebar fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card lg:flex">
         <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-          <img src="/farmlink-logo.png" alt="Farmyn" className="h-8 w-8" />
+          <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-foreground">
             Farm<span className="text-primary">yn</span>
           </span>
@@ -248,14 +233,14 @@ export default function SellerDashboardPage() {
           {renderNav(setActiveTab)}
         </nav>
         <div className="space-y-2 border-t border-border p-3">
-          <BmoniModeBadge className="w-full justify-center" />
+          <PaymentStatusBadge className="w-full justify-center" />
           <Button variant="ghost" size="sm" className="w-full" onClick={logout}>Logout</Button>
         </div>
       </aside>
 
       {/* Mobile icon rail — always visible, expands to full menu on toggle */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-16 flex-col items-center border-r border-border bg-card py-4 lg:hidden">
-        <img src="/farmlink-logo.png" alt="Farmyn" className="h-8 w-8" />
+      <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-40 flex w-16 flex-col items-center border-r border-border bg-card py-4 lg:hidden">
+        <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Open full menu"
@@ -271,6 +256,7 @@ export default function SellerDashboardPage() {
             return (
               <button
                 key={tab.id}
+                aria-current={isSelected ? "page" : undefined}
                 onClick={() => go(tab.id)}
                 aria-label={tab.label}
                 title={tab.label}
@@ -291,10 +277,10 @@ export default function SellerDashboardPage() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-card">
+          <aside className="dashboard-sidebar absolute inset-y-0 left-0 flex w-72 flex-col bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
               <span className="flex items-center gap-2">
-                <img src="/farmlink-logo.png" alt="Farmyn" className="h-7 w-7" />
+                <img src="/farmyn-logo.png" alt="Farmyn" className="h-7 w-7" />
                 <span className="font-display text-base font-bold">Farm<span className="text-primary">yn</span></span>
               </span>
               <button onClick={() => setMobileOpen(false)} aria-label="Hide full menu" title="Hide full menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted">
@@ -313,13 +299,13 @@ export default function SellerDashboardPage() {
 
       {/* Main column */}
       <div className="pl-16 lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
+        <header className="dashboard-topbar sticky top-0 z-30 flex h-20 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted lg:hidden">
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="font-display text-lg font-bold text-foreground">{tabTitle}</h1>
+          <h1 className="text-xs font-semibold text-foreground">Seller workspace <span className="mx-2 font-normal text-slate-300">/</span> <span className="text-muted-foreground">{tabTitle}</span></h1>
           <div className="ml-auto flex items-center gap-2">
-            <BmoniModeBadge className="hidden sm:inline-flex" />
+            <PaymentStatusBadge className="hidden sm:inline-flex" />
             <Link href="/marketplace">
               <Button variant="outline" size="sm" className="gap-1.5">
                 Explore Market <ArrowUpRight className="h-3.5 w-3.5" />
@@ -329,102 +315,8 @@ export default function SellerDashboardPage() {
         </header>
 
         {/* Tab Content window */}
-        <main className="min-w-0 space-y-6 p-4 sm:p-6">
-          {/* 1. OVERVIEW TAB */}
-          {activeTab === "overview" && (
-            <div className="grid gap-6">
-              {/* Stats panel grid */}
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                {[
-                  { label: "Subtotal Sold", value: formatNaira(totalSales), icon: TrendingUp },
-                  { label: "Held in Escrow", value: formatNaira(heldInEscrow), icon: ShieldCheck, highlight: true },
-                  { label: "Active Products", value: sellerProducts.length.toString(), icon: Package },
-                  { label: "Orders", value: sellerOrders.length.toString(), icon: ShoppingCart },
-                  { label: "Average Ticket", value: formatNaira(avgTicket), icon: Megaphone },
-                ].map((stat) => (
-                  <div key={stat.label} className={`rounded-md border p-5 shadow-sm  transition-shadow duration-300 ${"highlight" in stat && stat.highlight ? "border-emerald-300 bg-emerald-50/60" : "border-border bg-card"}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</span>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
-                        <stat.icon className="h-4 w-4 text-primary" />
-                      </div>
-                    </div>
-                    <p className="mt-4 font-display text-2xl font-bold text-card-foreground">{stat.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-12">
-                  <MoneyAccountCard
-                    ownerKey={`farmlink-${currentUser.id}`}
-                    profile={(() => {
-                      const parts = currentUser.name.trim().split(/\s+/);
-                      return {
-                        firstName: parts[0] || "Farmyn",
-                        lastName: parts.slice(1).join(" ") || parts[0] || "User",
-                        email: currentUser.email,
-                        phoneNumber: currentUser.phone,
-                      };
-                    })()}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-6 lg:grid-cols-12">
-                {/* CSS Bar Chart performance - Monthly */}
-                <div className="lg:col-span-7 rounded-md border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">Monthly Revenue Trend</h3>
-                    <p className="text-xs text-muted-foreground">Gross sales over the last 6 months</p>
-                  </div>
-                  <div className="flex items-end justify-between h-52 pt-6 gap-3">
-                    {[
-                      { month: "Jan", sales: 25000, height: "h-[25%]", amount: "₦25k" },
-                      { month: "Feb", sales: 42000, height: "h-[42%]", amount: "₦42k" },
-                      { month: "Mar", sales: 35000, height: "h-[35%]", amount: "₦35k" },
-                      { month: "Apr", sales: 68000, height: "h-[68%]", amount: "₦68k" },
-                      { month: "May", sales: 58000, height: "h-[58%]", amount: "₦58k" },
-                      { month: "Jun", sales: 115000, height: "h-[100%]", amount: "₦115k" },
-                    ].map((bar) => (
-                      <div key={bar.month} className="flex-1 flex flex-col items-center gap-2 group">
-                        <div className="relative w-full flex justify-center items-end h-36">
-                          <div className="absolute bottom-[105%] bg-primary text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-                            {bar.amount}
-                          </div>
-                          <div className={`w-full max-w-[32px] rounded-t bg-primary ${bar.height} transition-all duration-500 group-hover:bg-primary/80`} />
-                        </div>
-                        <span className="text-xs font-bold text-muted-foreground uppercase">{bar.month}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Price insights sidebar */}
-                <div className="lg:col-span-5 rounded-md border border-border bg-card p-6 shadow-sm">
-                  <h3 className="text-lg font-bold text-foreground">Market Price Guidance</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Suggested pricing based on current marketplace demand.</p>
-                  <div className="mt-5 space-y-3 max-h-[15rem] overflow-y-auto pr-1">
-                    {priceInsights.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">List products to see pricing suggestions.</p>
-                    ) : (
-                      priceInsights.map((insight) => (
-                        <div key={insight.id} className="rounded-md border border-border p-3 flex items-center justify-between text-sm">
-                          <div>
-                            <p className="font-semibold text-foreground">{insight.name}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Current: {formatNaira(insight.currentPrice)}</p>
-                          </div>
-                          <p className="font-bold text-primary text-xs bg-accent/40 rounded px-2 py-1">
-                            {formatNaira(insight.suggestedMin)} - {formatNaira(insight.suggestedMax)}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        <main className="dashboard-main mx-auto max-w-[1480px] min-w-0 space-y-6 p-5 sm:p-8 xl:p-10">
+          {activeTab === "overview" && <DashboardOverview onSellerNavigate={go} />}
 
           {/* 2. INVENTORY TAB */}
           {activeTab === "inventory" && (
@@ -500,8 +392,8 @@ export default function SellerDashboardPage() {
           {activeTab === "orders" && (
             <div className="rounded-md border border-border bg-card p-6 shadow-sm">
               <div className="border-b border-border pb-4 mb-4">
-                <h2 className="text-lg font-bold text-foreground">Escrow Protected Orders</h2>
-                <p className="text-xs text-muted-foreground mt-1">Manage buyer orders. Payments are securely held in escrow until delivery is marked successful.</p>
+                <h2 className="text-lg font-bold text-foreground">Customer Orders</h2>
+                <p className="text-xs text-muted-foreground mt-1">Manage paid orders and delivery. Seller settlement is handled separately from checkout.</p>
               </div>
               <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
                 {sellerOrders.length === 0 ? (
@@ -542,7 +434,7 @@ export default function SellerDashboardPage() {
 
                       <div className="mt-4 flex items-center justify-between">
                         <p className="text-sm font-bold text-foreground">Order Subtotal: {formatNaira(order.subtotal)}</p>
-                        {order.status !== "Completed" && (
+                        {order.paymentStatus === "Paid" && order.status !== "Delivered" && order.status !== "Completed" && (
                           <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => advanceOrderStatus(order.id)}>
                             Advance Status
                           </Button>
@@ -551,17 +443,6 @@ export default function SellerDashboardPage() {
                     </div>
                   ))
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* 4. PURSES TAB */}
-          {activeTab === "purses" && (
-            <div className="grid gap-6">
-              <PursesWidget ownerKey={`farmlink-${currentUser.id}`} />
-              <div className="rounded-md border border-border bg-card p-5 shadow-sm text-sm text-muted-foreground">
-                Released payouts land here for budgeting — split each one across restock, family and savings.
-                Need a bank withdrawal? <Link href="/checkout-bmoni" className="font-semibold text-primary hover:underline">Open Secure Checkout</Link>.
               </div>
             </div>
           )}

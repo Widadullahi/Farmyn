@@ -44,8 +44,8 @@ const categoryIcons = {
 const features = [
   {
     icon: Lock,
-    title: "Secure Escrow Payments",
-    description: "Your money is safe. We hold payments securely and only release funds to the farmer after you confirm delivery.",
+    title: "Paystack Checkout",
+    description: "Complete payment on Paystack. We verify the transaction before marking your order paid.",
   },
   {
     icon: Truck,
@@ -66,7 +66,7 @@ const features = [
 
 const trustPoints = [
   "Strict seller verification",
-  "Your payments are protected",
+  "Checkout with Paystack",
   "Post bulk orders & get bids",
 ];
 
@@ -118,8 +118,8 @@ export default function Home() {
       color: "text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-950/30",
     },
     {
-      value: "100% Secure",
-      label: "Escrow Protection",
+      value: "Paystack",
+      label: "Payment Verification",
       icon: Lock,
       color: "text-primary bg-accent/60 dark:text-primary-foreground dark:bg-primary/20",
     },
@@ -230,7 +230,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Right Column: Escrow Mechanism Visualization Mockup */}
+          {/* Right Column: Example order journey */}
           <div className="lg:col-span-5 hidden lg:block relative">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -241,7 +241,7 @@ export default function Home() {
               {/* Decorative backgrounds */}
               <div className="absolute inset-0 -m-4 rounded-3xl bg-gradient-to-tr from-primary/10 to-secondary/10 blur-xl -z-10" />
 
-              {/* Main Card: Escrow Simulation */}
+              {/* Main Card: Example payment summary */}
               <div className="glass bg-card/90 border border-border/80 rounded-3xl p-6 shadow-elevated">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/50">
                   <div className="flex items-center gap-3">
@@ -249,12 +249,12 @@ export default function Home() {
                       <Lock className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground">Escrow Protection</p>
-                      <h4 className="text-sm font-bold text-foreground">Order FYN-9024</h4>
+                      <p className="text-xs font-semibold text-muted-foreground">Payment Verification</p>
+                      <h4 className="text-sm font-bold text-foreground">Example order FYN-9024</h4>
                     </div>
                   </div>
                   <span className="rounded-full bg-secondary/15 px-3 py-1 text-xs font-semibold text-secondary">
-                    Held in Escrow
+                    Example · Paid
                   </span>
                 </div>
 
@@ -265,7 +265,7 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-foreground">1. Secure Payment</p>
-                      <p className="text-[11px] text-muted-foreground">Payment held securely by Farmyn</p>
+                      <p className="text-[11px] text-muted-foreground">Payment verified through Paystack</p>
                     </div>
                   </div>
 
@@ -285,14 +285,14 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-foreground">3. Confirm Delivery</p>
-                      <p className="text-[11px] text-muted-foreground">Awaiting buyer confirmation to release payout</p>
+                      <p className="text-[11px] text-muted-foreground">Confirm receipt when your produce arrives</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-6 bg-accent/40 rounded-2xl p-4 border border-border/40">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">Escrow balance:</span>
+                    <span className="text-muted-foreground">Example order total:</span>
                     <span className="font-bold text-primary">NGN 48,500.00</span>
                   </div>
                 </div>
@@ -359,24 +359,24 @@ export default function Home() {
           <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-300">
-                <Lock className="h-3.5 w-3.5" /> Secured by BMONI escrow
+                <Lock className="h-3.5 w-3.5" /> Payments with Paystack
               </p>
               <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
-                Money stays locked until your delivery arrives
+                Secure checkout, clear order updates
               </h2>
               <p className="mt-2 text-sm text-white/75">
-                Every order is held in a protected CNGN balance and released to the farmer only after you confirm delivery. Plus Farm Purses to budget each harvest.
+                Pay through Paystack, receive a verified payment confirmation, and follow your order through preparation and delivery. Seller settlement is handled separately.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/checkout-bmoni">
+              <Link href="/cart">
                 <Button className="gap-2 bg-white text-emerald-900 hover:bg-white/90 font-semibold">
-                  Try Secure Checkout <ArrowRight className="h-4 w-4" />
+                  View your cart <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/purses">
+              <Link href="/cart">
                 <Button variant="outline" className="gap-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white">
-                  View Farm Purses
+                  Track your orders
                 </Button>
               </Link>
             </div>
@@ -460,7 +460,7 @@ export default function Home() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Why Farmyn</p>
             <h2 className="font-display text-3xl font-bold text-foreground">A safer, simpler way to trade</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-              We eliminate the risk of online farm purchases by holding payments in escrow and verifying every single seller on our platform.
+              Review farm profiles, check product details, pay through Paystack, and follow your order updates in one place.
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
@@ -498,7 +498,7 @@ export default function Home() {
         <div className="container">
           <div className="mb-12 text-center">
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Guaranteed Safety & Nationwide Scale</p>
-            <h2 className="font-display text-3xl font-bold text-foreground">Trade without boundaries, with zero risk</h2>
+            <h2 className="font-display text-3xl font-bold text-foreground">Trade with clearer information</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
               Farmyn is built specifically to address the challenges of trust, distance, and logistics in Nigerian agriculture.
             </p>
@@ -523,7 +523,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Zero Dupes Escrow Card */}
+            {/* Payment verification card */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -535,9 +535,9 @@ export default function Home() {
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">Zero Risk Escrow (No Scams)</h3>
+                <h3 className="text-lg font-bold text-foreground">Verified payment records</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Say goodbye to scams and dupes. Buyers fund the secure escrow before dispatch, proving they have the money. However, the farmer does not receive the payout until the buyer verifies that the goods have arrived safely. No one gets cheated.
+                  Your order is marked paid only after the backend verifies the Paystack transaction. Keep your payment reference and track delivery from your account. Payment collection is separate from seller settlement.
                 </p>
               </div>
             </motion.div>

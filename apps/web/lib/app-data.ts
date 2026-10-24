@@ -73,7 +73,8 @@ export interface Order {
     | "In Transit"
     | "Delivered"
     | "Completed";
-  paymentStatus: "Held in Escrow" | "Released to Seller";
+  paymentStatus: "Awaiting Payment" | "Paid" | "Unverified";
+  paymentReference?: string;
   createdAt: string;
   timeline: OrderEvent[];
 }
@@ -468,7 +469,7 @@ export const seedReviews: Review[] = [
     buyerId: buyerAdaId,
     buyerName: "Ada Nwosu",
     rating: 5,
-    comment: "Fresh and well packed. Delivery was smooth and the escrow flow gave me confidence.",
+    comment: "Fresh and well packed. Delivery was smooth and the order updates were helpful.",
     createdAt: "2026-02-21T09:30:00.000Z",
   },
   {
@@ -505,10 +506,10 @@ export const seedOrders: Order[] = [
     total: 20350,
     deliveryAddress: "Admiralty Way, Lekki Phase 1, Lagos",
     status: "Delivered",
-    paymentStatus: "Held in Escrow",
+    paymentStatus: "Unverified",
     createdAt: "2026-02-20T08:00:00.000Z",
     timeline: [
-      { label: "Order placed and payment moved into escrow", date: "2026-02-20T08:00:00.000Z" },
+      { label: "Demonstration order; payment not verified", date: "2026-02-20T08:00:00.000Z" },
       { label: "Seller confirmed stock and started packing", date: "2026-02-20T10:00:00.000Z" },
       { label: "Order moved in transit", date: "2026-02-21T08:00:00.000Z" },
       { label: "Buyer marked delivery successful", date: "2026-02-21T14:15:00.000Z" },
@@ -570,7 +571,7 @@ export const seedChatMessages: ChatMessage[] = [
     senderName: "Ada Nwosu",
     receiverId: sellerNgoziId,
     receiverName: "Mama Ngozi Farm",
-    message: "Excellent! I will place an order for 2 baskets via escrow protection now.",
+    message: "Excellent! I will place an order for 2 baskets through checkout now.",
     createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
   },
   {

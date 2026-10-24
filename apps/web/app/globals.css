@@ -4,6 +4,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The workspace uses a quieter visual system than the public storefront. */
+.dashboard-workspace {
+  --background: 210 20% 98%;
+  --border: 210 16% 91%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 12% 47%;
+  --font-display: var(--font-body);
+  background: #f6f8fa;
+  color: #182c25;
+}
+.dashboard-workspace h1, .dashboard-workspace h2, .dashboard-workspace h3,
+.dashboard-workspace h4, .dashboard-workspace .font-display { font-family: var(--font-body); }
+.dashboard-sidebar { background: #102f27; color: #e9f1ed; border-color: #244239; z-index: 40; }
+.dashboard-sidebar .border-border { border-color: #28453b; }
+.dashboard-sidebar .text-foreground { color: #f0f5f1; }
+.dashboard-sidebar .text-muted-foreground { color: #a1b8ac; }
+.dashboard-sidebar .text-primary { color: #a9d5a0; }
+.dashboard-sidebar .text-emerald-700 { color: #a9d5a0; }
+.dashboard-sidebar .text-amber-700 { color: #edc789; }
+.dashboard-sidebar nav { padding: 24px 14px; }
+.dashboard-sidebar nav > p { font-size: 9px; letter-spacing: .18em; margin-bottom: 14px; color: #779a88; }
+.dashboard-sidebar nav a, .dashboard-sidebar nav button { border-radius: 8px; font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+.dashboard-sidebar nav .bg-primary { background: #254e3c; color: #e2f3d5; box-shadow: inset 3px 0 #b9dc8f; }
+.dashboard-sidebar nav a:hover, .dashboard-sidebar nav button:hover,
+.dashboard-sidebar button.hover\:bg-muted:hover { background: #224638; color: #fff; }
+.dashboard-sidebar > div:first-child { padding-top: 25px; padding-bottom: 25px; }
+.dashboard-sidebar .bg-primary { background-color: #365f46; }
+.dashboard-sidebar [data-state] { color: inherit; }
+.dashboard-topbar { background: rgba(255,255,255,.94); backdrop-filter: blur(12px); }
+.dashboard-topbar h1 { letter-spacing: 0; }
+.dashboard-main { animation: dashboard-enter .25s ease-out; }
+.dashboard-eyebrow { font-size: 9px; letter-spacing: .19em; font-weight: 700; color: #6c8575; }
+.dashboard-panel { border: 1px solid #e6ebed; border-radius: 14px; background: #fff; box-shadow: 0 2px 4px #172c2303; }
+.dashboard-metric { padding: 22px; border: 1px solid #e6ebed; border-radius: 14px; background: #fff; color: #33483e; }
+.dashboard-metric-primary { background: #173e2d; color: #f2f6ed; border-color: #173e2d; }
+.dashboard-metric-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; background: #eff4f0; color: #47724f; }
+.dashboard-metric-primary .dashboard-metric-icon { background: #31543e; color: #c5e7a4; }
+.dashboard-workspace input:focus-visible, .dashboard-workspace select:focus-visible,
+.dashboard-workspace summary:focus-visible { outline: 2px solid #548a56; outline-offset: 3px; }
+.dashboard-workspace button, .dashboard-workspace a { -webkit-tap-highlight-color: transparent; }
+@keyframes dashboard-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .dashboard-main { animation: none; } }
+
 @layer base {
   :root {
     --background: 42 30% 97%;

@@ -1,8 +1,7 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { useApp } from "@/context/AppContext";
 import { formatDate, formatNaira } from "@/lib/app-data";
 
 export default function CartPage() {
-  const router = useRouter();
   const {
     cart,
     products,
@@ -28,6 +26,8 @@ export default function CartPage() {
   } = useApp();
   const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.location || "");
   const [note, setNote] = useState("");
+  const [paying, setPaying] = useState(false);
+  useEffect(() => { setDeliveryAddress(currentUser?.location || ""); }, [currentUser?.id]);
   const [reviewRatings, setReviewRatings] = useState<Record<string, number>>({});
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
@@ -38,21 +38,22 @@ export default function CartPage() {
     }))
     .filter((entry): entry is typeof entry & { product: NonNullable<typeof entry.product> } => Boolean(entry.product));
 
-  const subtotal = cartItems.reduce((sum, entry) => sum + entry.product.price * entry.quantity, 0);
-  const commission = subtotal * 0.05;
-  const deliveryFee = cartItems.length > 0 ? 2500 : 0;
+  const sellerSubtotals = new Map<string, number>();
+  cartItems.forEach(entry => sellerSubtotals.set(entry.product.sellerId, (sellerSubtotals.get(entry.product.sellerId) || 0) + Math.round(entry.product.price * 100) * entry.quantity));
+  const subtotal = [...sellerSubtotals.values()].reduce((sum, value) => sum + value, 0) / 100;
+  const commission = [...sellerSubtotals.values()].reduce((sum, value) => sum + Math.round(value * 0.05), 0) / 100;
+  const deliveryFee = sellerSubtotals.size * 2500;
   const total = subtotal + commission + deliveryFee;
   const buyerOrders = currentUser ? orders.filter((order) => order.buyerId === currentUser.id) : [];
 
-  const handleCheckout = () => {
-    const result = checkout({ deliveryAddress, note });
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success(result.message);
-    router.push("/cart");
+  const handleCheckout = async () => {
+    setPaying(true);
+    try {
+      const result = await checkout({ deliveryAddress, note });
+      if (!result.ok || !result.authorizationUrl) { toast.error(result.message); return; }
+      window.location.assign(result.authorizationUrl);
+    } catch { toast.error("Could not open checkout. Your cart is still saved."); }
+    finally { setPaying(false); }
   };
 
   return (
@@ -62,7 +63,7 @@ export default function CartPage() {
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-foreground">Cart and order tracking</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            This flow reflects the PRD escrow model: payment is held until delivery is confirmed, then released to the seller.
+            Pay through Paystack. Orders are marked paid only after server verification; delivery and seller settlement are tracked separately.
           </p>
         </div>
 
@@ -108,11 +109,11 @@ export default function CartPage() {
                           </div>
                           <div className="mt-4 flex items-center justify-between">
                             <div className="inline-flex items-center rounded-full border border-border">
-                              <button className="px-3 py-2" onClick={() => updateCartQuantity(product.id, quantity - 1)}>
+                              <button aria-label={`Decrease ${product.name} quantity`} className="px-3 py-2" onClick={() => updateCartQuantity(product.id, quantity - 1)}>
                                 <Minus className="h-3.5 w-3.5" />
                               </button>
                               <span className="px-3 text-sm font-medium">{quantity}</span>
-                              <button className="px-3 py-2" onClick={() => updateCartQuantity(product.id, quantity + 1)}>
+                              <button aria-label={`Increase ${product.name} quantity`} disabled={quantity >= product.stockCount} className="px-3 py-2 disabled:opacity-30" onClick={() => updateCartQuantity(product.id, quantity + 1)}>
                                 <Plus className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -133,7 +134,7 @@ export default function CartPage() {
                 <Truck className="h-5 w-5 text-primary" />
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">Your orders</h2>
-                  <p className="text-sm text-muted-foreground">Track seller confirmation, transit, delivery, and escrow release.</p>
+                  <p className="text-sm text-muted-foreground">Track confirmation, preparation, delivery, and payment status.</p>
                 </div>
               </div>
 
@@ -230,9 +231,9 @@ export default function CartPage() {
                         <p className="mt-1 text-sm text-foreground">{order.timeline[0]?.label}</p>
                         <p className="text-xs text-muted-foreground">{formatDate(order.timeline[0]?.date || order.createdAt)}</p>
                       </div>
-                      {order.status === "Delivered" && (
+                      {order.status === "Delivered" && order.paymentStatus === "Paid" && (
                         <Button className="mt-4" onClick={() => markOrderCompleted(order.id)}>
-                          Confirm delivery and release escrow
+                          Confirm delivery
                         </Button>
                       )}
                     </div>
@@ -246,7 +247,7 @@ export default function CartPage() {
             <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Escrow summary
+                Order summary
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -258,11 +259,11 @@ export default function CartPage() {
                   <span className="font-medium text-foreground">{formatNaira(commission)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Delivery estimate</span>
+                  <span className="text-muted-foreground">Delivery (₦2,500 per seller)</span>
                   <span className="font-medium text-foreground">{formatNaira(deliveryFee)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-border pt-3 text-base">
-                  <span className="font-semibold text-foreground">Total held in escrow</span>
+                  <span className="font-semibold text-foreground">Estimated total</span>
                   <span className="font-display text-xl font-bold text-primary">{formatNaira(total)}</span>
                 </div>
               </div>
@@ -278,16 +279,11 @@ export default function CartPage() {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                 />
-                <Button className="w-full gap-2" disabled={cartItems.length === 0} onClick={handleCheckout}>
-                  Place escrow-protected order <ArrowRight className="h-4 w-4" />
+                <Button className="w-full gap-2" disabled={cartItems.length === 0 || paying} onClick={handleCheckout}>
+                  {paying ? "Opening Paystack…" : "Pay with Paystack"} <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Link href={`/checkout-bmoni?amount=${total.toFixed(0)}`} className={cartItems.length === 0 ? "pointer-events-none opacity-50" : ""}>
-                  <Button variant="outline" className="w-full gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50">
-                    <ShieldCheck className="h-4 w-4" /> Pay now with BMONI escrow
-                  </Button>
-                </Link>
-                <p className="text-center text-[11px] text-muted-foreground">
-                  Card/bank payment locks funds in CNGN escrow — released to the farmer on your delivery confirmation.
+                <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                  You will complete payment on Paystack. The server checks prices and stock before checkout. Test mode only; no funds are held in escrow.
                 </p>
               </div>
             </div>
