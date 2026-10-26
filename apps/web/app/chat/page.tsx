@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MessageSquare, Send, ShieldCheck, UserCircle2 } from "lucide-react";
@@ -89,12 +90,13 @@ function ChatContent() {
       (msg.senderId === activeUserId && msg.receiverId === currentUser.id),
   );
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || !activeUserId) return;
 
-    sendChatMessage(activeUserId, messageText.trim());
-    setMessageText("");
+    const result = await sendChatMessage(activeUserId, messageText.trim());
+    if (result.ok) setMessageText("");
+    else toast.error(result.message);
   };
 
   return (

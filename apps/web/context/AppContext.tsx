@@ -1,548 +1,98 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 import { startCheckout, verifyCheckout } from "@/lib/paystack";
-import {
-  allCategories,
-  AppState,
-  BulkRequest,
-  createId,
-  initialAppState,
-  Order,
-  orderStatusFlow,
-  Product,
-  Review,
-  User,
-  UserRole,
-  ChatMessage,
-} from "@/lib/app-data";
-
-const STORAGE_KEY = "farmyn-local-mvp-v1";
-
-interface RegisterInput {
-  role: UserRole;
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-  location: string;
-  storeName?: string;
-}
-
-interface CheckoutInput {
-  deliveryAddress: string;
-  note?: string;
-}
-
-interface ProductInput {
-  name: string;
-  category: string;
-  price: number;
-  stockCount: number;
-  unit: string;
-  minimumOrder: string;
-  image: string;
-  location: string;
-  description: string;
-}
-
+import { allCategories, AppState, BulkRequest, initialAppState, User, UserRole } from "@/lib/app-data";
+type Result = { ok: boolean; message: string; user?: User; authorizationUrl?: string };
+interface RegisterInput { role: UserRole; name: string; email: string; phone: string; password: string; location: string; storeName?: string }
+interface ProductInput { name: string; category: string; price: number; stockCount: number; unit: string; minimumOrder: string; image: string; location: string; description: string }
 interface AppContextValue extends AppState {
-  currentUser: User | null;
-  isHydrated: boolean;
-  categories: string[];
-  cartCount: number;
-  registerUser: (input: RegisterInput) => { ok: boolean; message: string; user?: User };
-  login: (email: string, password: string) => { ok: boolean; message: string; user?: User };
-  logout: () => void;
-  addToCart: (productId: string) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
-  removeFromCart: (productId: string) => void;
-  clearCart: () => void;
-  checkout: (input: CheckoutInput) => Promise<{ ok: boolean; message: string; authorizationUrl?: string }>;
-  confirmPayment: (reference: string) => Promise<{ ok: boolean; message: string }>;
-  addProduct: (input: ProductInput) => { ok: boolean; message: string };
-  updateSellerProfile: (patch: Partial<User>) => void;
-  advanceOrderStatus: (orderId: string) => void;
-  markOrderCompleted: (orderId: string) => void;
-  addReview: (productId: string, rating: number, comment: string) => { ok: boolean; message: string };
-  createBulkRequest: (input: Omit<BulkRequest, "id" | "buyerId" | "buyerName" | "status" | "createdAt">) => { ok: boolean; message: string };
-  createAdRequest: (type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing", title: string, budget: number) => { ok: boolean; message: string };
-  sendChatMessage: (receiverId: string, message: string) => { ok: boolean; message: string };
+  currentUser: User | null; isHydrated: boolean; serviceError: string; categories: string[]; cartCount: number;
+  registerUser: (input: RegisterInput) => Promise<Result>;
+  confirmRegistration: (email: string, code: string) => Promise<Result>;
+  login: (email: string, password: string) => Promise<Result>;
+  logout: () => Promise<void>;
+  addToCart: (id: string) => void; updateCartQuantity: (id: string, quantity: number) => void; removeFromCart: (id: string) => void; clearCart: () => void;
+  checkout: (input: { deliveryAddress: string; note?: string }) => Promise<Result>;
+  confirmPayment: (reference: string) => Promise<Result>;
+  addProduct: (input: ProductInput) => Promise<Result>;
+  uploadPhoto: (file: File) => Promise<{ image: string; preview: string }>;
+  updateSellerProfile: (patch: Partial<User>) => Promise<void>;
+  advanceOrderStatus: (id: string) => Promise<void>; markOrderCompleted: (id: string) => Promise<void>;
+  addReview: (id: string, rating: number, comment: string) => Promise<Result>;
+  createBulkRequest: (input: Omit<BulkRequest, "id" | "buyerId" | "buyerName" | "status" | "createdAt">) => Promise<Result>;
+  createAdRequest: (type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing", title: string, budget: number) => Promise<Result>;
+  sendChatMessage: (id: string, message: string) => Promise<Result>;
 }
-
+const CART_KEY = "farmyn-cart-v2";
 const AppContext = createContext<AppContextValue | null>(null);
-
-const loadState = (): AppState => {
-  if (typeof window === "undefined") {
-    return initialAppState;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialAppState;
-    const loaded = JSON.parse(raw) as AppState;
-    if (![loaded.users, loaded.products, loaded.orders, loaded.cart, loaded.reviews, loaded.bulkRequests, loaded.adRequests, loaded.chatMessages].every(Array.isArray)) return initialAppState;
-    return {
-      ...loaded,
-      currentUserId: loaded.users.some(u => u.id === loaded.currentUserId) ? loaded.currentUserId : null,
-      orders: loaded.orders.map(order => ({ ...order, paymentStatus: ["Paid", "Awaiting Payment", "Unverified"].includes(order.paymentStatus) ? order.paymentStatus : "Unverified" })),
-    };
-  } catch { return initialAppState; }
-};
-
-export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(initialAppState);
-  const [isHydrated, setIsHydrated] = useState(false);
-  useEffect(() => { setState(loadState()); setIsHydrated(true); }, []);
+  const [isHydrated, setHydrated] = useState(false);
+  const [serviceError, setServiceError] = useState("");
+  const requestId = useRef(0);
+  const refresh = useCallback(async () => {
+    const id = ++requestId.current;
+    try { const next = await api<AppState>("/state", undefined, "GET"); if (id === requestId.current) { setState(prev => ({ ...next, cart: prev.cart })); setServiceError(""); } }
+    catch (e) { if (id === requestId.current) { setServiceError(e instanceof Error ? e.message : "Farmyn is temporarily unavailable."); setState(prev => ({ ...initialAppState, cart: prev.cart })); } }
+    finally { setHydrated(true); }
+  }, []);
   useEffect(() => {
-    if (!isHydrated) return;
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    catch { toast.error("Your browser could not save changes. Enable site storage before checkout."); }
-  }, [state, isHydrated]);
-
-  const currentUser = state.users.find((user) => user.id === state.currentUserId) ?? null;
-  const cartCount = state.cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const registerUser = (input: RegisterInput) => {
-    const email = input.email.trim().toLowerCase();
-    if (state.users.some((user) => user.email.toLowerCase() === email)) {
-      return { ok: false, message: "An account with that email already exists." };
+    // Retire the prototype store; it contained demo accounts and plaintext passwords.
+    try { localStorage.removeItem("farmyn-local-mvp-v1"); } catch { /* Private browser storage may be unavailable. */ }
+    try { const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]"); if (Array.isArray(cart) && cart.every(x => typeof x.productId === "string" && Number.isSafeInteger(x.quantity) && x.quantity > 0 && x.quantity <= 100)) setState(p => ({ ...p, cart })); } catch { /* Ignore invalid guest carts. */ }
+    void refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 20000);
+    const focus = () => { void refresh(); }; window.addEventListener("focus", focus);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", focus); requestId.current++; };
+  }, [refresh]);
+  useEffect(() => { if (isHydrated) { try { localStorage.setItem(CART_KEY, JSON.stringify(state.cart)); } catch { /* Server records remain safe when guest storage is unavailable. */ } } }, [state.cart, isHydrated]);
+  const currentUser = state.users.find(u => u.id === state.currentUserId) || null;
+  const mutate = async (path: string, body?: unknown, method?: string): Promise<Result> => {
+    try { const r = await api<{ message: string; user?: User }>(path, body, method); await refresh(); return { ok: true, ...r }; }
+    catch (e) { return { ok: false, message: e instanceof Error ? e.message : "Please retry." }; }
+  };
+  const notify = async (path: string, body?: unknown, method?: string) => { const r = await mutate(path, body, method); if (r.ok) toast.success(r.message); else toast.error(r.message); };
+  const updateCartQuantity = (id: string, quantity: number) => {
+    const product = state.products.find(p => p.id === id);
+    if (!Number.isSafeInteger(quantity) || quantity < 0) return;
+    setState(prev => ({ ...prev, cart: quantity === 0 ? prev.cart.filter(p => p.productId !== id) : product ? prev.cart.map(p => p.productId === id ? { ...p, quantity: Math.min(quantity, product.stockCount, 100) } : p).filter(p => p.quantity > 0) : prev.cart }));
+  };
+  const addToCart = (id: string) => {
+    const product = state.products.find(p => p.id === id); if (!product || product.stockCount < 1) { toast.error("This product is out of stock."); return; }
+    setState(prev => { const item = prev.cart.find(p => p.productId === id); return { ...prev, cart: item ? prev.cart.map(p => p.productId === id ? { ...p, quantity: Math.min(p.quantity + 1, product.stockCount, 100) } : p) : [...prev.cart, { productId: id, quantity: 1 }] }; }); toast.success("Added to cart.");
+  };
+  const checkout = async (input: { deliveryAddress: string; note?: string }): Promise<Result> => {
+    if (!currentUser || currentUser.role !== "buyer") return { ok: false, message: "Sign in as a buyer to check out." };
+    try { const result = await startCheckout({ items: state.cart, deliveryAddress: input.deliveryAddress, note: input.note || "" }); return { ok: true, message: "Opening Paystack…", ...result }; }
+    catch (e) { return { ok: false, message: e instanceof Error ? e.message : "Checkout is unavailable." }; }
+  };
+  const confirmPayment = async (reference: string): Promise<Result> => {
+    if (!currentUser || !/^farmyn_[a-f0-9]{32}$/.test(reference)) return { ok: false, message: "Sign in to verify this payment." };
+    const receipt = await verifyCheckout(reference);
+    if (receipt.status === "review") return { ok: false, message: "Payment was received, but availability changed. Your payment is recorded for support review. Do not pay again. Keep your payment reference." };
+    if (receipt.status !== "paid") return { ok: false, message: "Payment has not been confirmed. Your cart is still saved." };
+    if (!receipt.orders.length || receipt.orders.some(o => o.buyerId !== currentUser.id || o.paymentStatus !== "Paid" || o.paymentReference !== reference)) throw new Error("The payment does not match your account.");
+    const marker = `farmyn-receipt-${reference}`;
+    if (!localStorage.getItem(marker)) {
+      const quantities = new Map<string, number>(); receipt.orders.forEach(o => o.items.forEach(i => quantities.set(i.productId, (quantities.get(i.productId) || 0) + i.quantity)));
+      setState(prev => ({ ...prev, cart: prev.cart.map(i => ({ ...i, quantity: Math.max(0, i.quantity - (quantities.get(i.productId) || 0)) })).filter(i => i.quantity > 0) }));
+      localStorage.setItem(marker, "confirmed");
     }
-
-    const user: User = {
-      id: createId(input.role),
-      role: input.role,
-      name: input.name.trim(),
-      email,
-      phone: input.phone.trim(),
-      password: input.password,
-      location: input.location.trim(),
-      storeName: input.storeName?.trim(),
-      bio:
-        input.role === "seller"
-          ? "New seller on Farmyn. Update this store profile from your dashboard."
-          : undefined,
-      verified: input.role === "seller" ? false : true,
-      emailVerified: true,
-      joinedAt: new Date().toISOString(),
-    };
-
-    setState((prev) => ({
-      ...prev,
-      users: [user, ...prev.users],
-      currentUserId: user.id,
-    }));
-
-    return { ok: true, message: "Account created successfully.", user };
+    await refresh(); return { ok: true, message: "Paystack verified your test payment. Your order is saved and awaiting seller confirmation." };
   };
-
-  const login = (email: string, password: string) => {
-    const user = state.users.find(
-      (entry) =>
-        entry.email.toLowerCase() === email.trim().toLowerCase() &&
-        entry.password === password,
-    );
-
-    if (!user) {
-      return { ok: false, message: "Invalid email or password." };
-    }
-
-    if (!user.emailVerified) {
-      return { ok: false, message: "Please verify your email before logging in." };
-    }
-
-    setState((prev) => ({ ...prev, currentUserId: user.id }));
-    return { ok: true, message: "Logged in successfully.", user };
-  };
-
-  const logout = () => {
-    setState((prev) => ({ ...prev, currentUserId: null }));
-    toast.success("You have been logged out.");
-  };
-
-  const addToCart = (productId: string) => {
-    const product = state.products.find((entry) => entry.id === productId);
-    if (!product || !product.inStock) {
-      toast.error("This product is currently out of stock.");
-      return;
-    }
-
-    setState((prev) => {
-      const existing = prev.cart.find((item) => item.productId === productId);
-      if (existing) {
-        return {
-          ...prev,
-          cart: prev.cart.map((item) =>
-            item.productId === productId
-              ? {
-                  ...item,
-                  quantity: Math.min(item.quantity + 1, product.stockCount || item.quantity + 1),
-                }
-              : item,
-          ),
-        };
-      }
-
-      return {
-        ...prev,
-        cart: [...prev.cart, { productId, quantity: 1 }],
-      };
-    });
-
-    toast.success("Added to cart.");
-  };
-
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    const product = state.products.find(p => p.id === productId);
-    if (!product || !Number.isSafeInteger(quantity)) return;
-    quantity = Math.min(quantity, product.stockCount);
-    setState((prev) => ({
-      ...prev,
-      cart: prev.cart.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item,
-      ),
-    }));
-  };
-
-  const removeFromCart = (productId: string) => {
-    setState((prev) => ({
-      ...prev,
-      cart: prev.cart.filter((item) => item.productId !== productId),
-    }));
-  };
-
-  const clearCart = () => {
-    setState((prev) => ({ ...prev, cart: [] }));
-  };
-
-  const checkout = async (input: CheckoutInput) => {
-    if (!isHydrated || !currentUser || currentUser.role !== "buyer") return { ok: false, message: "Log in as a buyer to check out." };
-    if (input.deliveryAddress.trim().length < 5) return { ok: false, message: "Enter a complete delivery address." };
-    if (!state.cart.length) return { ok: false, message: "Your cart is empty." };
-    for (const item of state.cart) {
-      const product = state.products.find(p => p.id === item.productId);
-      if (!product || !product.inStock || !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > product.stockCount) return { ok: false, message: "Check your cart quantities and stock availability." };
-    }
-    try {
-      const result = await startCheckout({
-        customer: { id: currentUser.id, name: currentUser.name, email: currentUser.email },
-        items: state.cart, deliveryAddress: input.deliveryAddress.trim(), note: input.note?.trim() || "",
-      });
-      return { ok: true, message: "Opening Paystack secure checkout…", authorizationUrl: result.authorizationUrl };
-    } catch (error) { return { ok: false, message: error instanceof Error ? error.message : "Checkout is unavailable. Please retry." }; }
-  };
-
-  const confirmPayment = async (reference: string) => {
-    if (!currentUser || !/^farmyn_[a-f0-9]{32}$/.test(reference)) throw new Error("Sign in to verify a valid payment reference.");
-    const receipt = await verifyCheckout(reference, currentUser.id);
-    if (receipt.status !== "paid") return { ok: false, message: "Paystack has not confirmed a successful payment. Your cart is still saved. You can check again shortly." };
-    if (!Array.isArray(receipt.orders) || !receipt.orders.length || receipt.orders.some(o => o.buyerId !== currentUser.id || o.paymentReference !== reference || o.paymentStatus !== "Paid")) throw new Error("The verified order details did not match your account.");
-    setState(prev => {
-      const fresh = receipt.orders.filter(order => !prev.orders.some(existing => existing.id === order.id));
-      if (!fresh.length) return prev;
-      const purchased = new Map<string, number>();
-      fresh.forEach(order => order.items.forEach(item => purchased.set(item.productId, (purchased.get(item.productId) || 0) + item.quantity)));
-      return {
-        ...prev, orders: [...fresh, ...prev.orders],
-        cart: prev.cart.map(item => ({ ...item, quantity: Math.max(0, item.quantity - (purchased.get(item.productId) || 0)) })).filter(item => item.quantity > 0),
-        products: prev.products.map(product => {
-          const stockCount = Math.max(0, product.stockCount - (purchased.get(product.id) || 0));
-          return { ...product, stockCount, inStock: stockCount > 0 };
-        }),
-      };
-    });
-    return { ok: true, message: "Paystack verified your test payment. Your order is now saved and ready for seller confirmation." };
-  };
-
-  const addProduct = (input: ProductInput) => {
-    if (!currentUser || currentUser.role !== "seller") {
-      return { ok: false, message: "Log in as a seller to add products." };
-    }
-
-    const product: Product = {
-      id: createId("product"),
-      name: input.name.trim(),
-      category: input.category,
-      price: input.price,
-      image: input.image.trim(),
-      sellerId: currentUser.id,
-      sellerName: currentUser.storeName || currentUser.name,
-      sellerVerified: currentUser.verified,
-      location: input.location.trim() || currentUser.location,
-      rating: 0,
-      reviewCount: 0,
-      inStock: input.stockCount > 0,
-      stockCount: input.stockCount,
-      unit: input.unit.trim(),
-      minimumOrder: input.minimumOrder.trim(),
-      description: input.description.trim(),
-      featured: false,
-    };
-
-    setState((prev) => ({
-      ...prev,
-      products: [product, ...prev.products],
-    }));
-
-    return { ok: true, message: "Product listed successfully." };
-  };
-
-  const updateSellerProfile = (patch: Partial<User>) => {
-    if (!currentUser) {
-      return;
-    }
-
-    setState((prev) => ({
-      ...prev,
-      users: prev.users.map((user) =>
-        user.id === currentUser.id ? { ...user, ...patch } : user,
-      ),
-    }));
-
-    toast.success("Profile updated.");
-  };
-
-  const advanceOrderStatus = (orderId: string) => {
-    setState((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) => {
-        if (order.id !== orderId || !currentUser || currentUser.role !== "seller" || order.sellerId !== currentUser.id || order.paymentStatus !== "Paid" || order.status === "Delivered" || order.status === "Completed") {
-          return order;
-        }
-
-        const index = orderStatusFlow.indexOf(order.status);
-        const nextStatus = orderStatusFlow[Math.min(index + 1, orderStatusFlow.length - 1)];
-        if (nextStatus === order.status) {
-          return order;
-        }
-
-        return {
-          ...order,
-          status: nextStatus,
-          paymentStatus: order.paymentStatus,
-          timeline: [
-            {
-              label:
-                nextStatus === "Preparing Order"
-                  ? "Seller confirmed stock and started packing"
-                  : nextStatus === "In Transit"
-                    ? "Order moved in transit"
-                    : nextStatus === "Delivered"
-                      ? "Seller marked order delivered"
-                      : "Buyer confirmation pending"
-              ,
-              date: new Date().toISOString(),
-            },
-            ...order.timeline,
-          ],
-        };
-      }),
-    }));
-  };
-
-  const markOrderCompleted = (orderId: string) => {
-    const target = state.orders.find(order => order.id === orderId);
-    if (!target || target.buyerId !== currentUser?.id || currentUser?.role !== "buyer" || target.status !== "Delivered" || target.paymentStatus !== "Paid") { toast.error("Only the buyer can confirm delivery of a paid, delivered order."); return; }
-    setState((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) =>
-        order.id === orderId && currentUser?.id === order.buyerId && currentUser.role === "buyer" && order.status === "Delivered" && order.paymentStatus === "Paid"
-          ? {
-              ...order,
-              status: "Completed",
-              paymentStatus: order.paymentStatus,
-              timeline: [
-                {
-                  label: "Buyer confirmed delivery",
-                  date: new Date().toISOString(),
-                },
-                ...order.timeline,
-              ],
-            }
-          : order,
-      ),
-    }));
-
-    toast.success("Delivery confirmation recorded. Seller settlement is handled separately.");
-  };
-
-  const addReview = (productId: string, rating: number, comment: string) => {
-    if (!currentUser) {
-      return { ok: false, message: "Log in to leave a review." };
-    }
-
-    const deliveredOrderExists = state.orders.some(
-      (order) =>
-        order.buyerId === currentUser.id &&
-        (order.status === "Delivered" || order.status === "Completed") &&
-        order.items.some((item) => item.productId === productId),
-    );
-
-    if (!deliveredOrderExists) {
-      return { ok: false, message: "Only delivered orders can be reviewed." };
-    }
-
-    const review: Review = {
-      id: createId("review"),
-      productId,
-      buyerId: currentUser.id,
-      buyerName: currentUser.name,
-      rating,
-      comment: comment.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    setState((prev) => {
-      const productReviews = [...prev.reviews.filter((entry) => entry.productId === productId), review];
-      const average =
-        productReviews.reduce((sum, entry) => sum + entry.rating, 0) / productReviews.length;
-
-      return {
-        ...prev,
-        reviews: [review, ...prev.reviews],
-        products: prev.products.map((product) =>
-          product.id === productId
-            ? {
-                ...product,
-                rating: average,
-                reviewCount: productReviews.length,
-              }
-            : product,
-        ),
-      };
-    });
-
-    return { ok: true, message: "Review submitted." };
-  };
-
-  const createBulkRequest = (
-    input: Omit<BulkRequest, "id" | "buyerId" | "buyerName" | "status" | "createdAt">,
-  ) => {
-    if (!currentUser || currentUser.role !== "buyer") {
-      return { ok: false, message: "Only buyers can create bulk requests." };
-    }
-
-    const request: BulkRequest = {
-      id: createId("bulk"),
-      buyerId: currentUser.id,
-      buyerName: currentUser.name,
-      title: input.title.trim(),
-      category: input.category,
-      quantity: input.quantity.trim(),
-      budget: input.budget,
-      location: input.location.trim(),
-      notes: input.notes.trim(),
-      status: "Open",
-      createdAt: new Date().toISOString(),
-    };
-
-    setState((prev) => ({
-      ...prev,
-      bulkRequests: [request, ...prev.bulkRequests],
-    }));
-
-    return { ok: true, message: "Bulk request published." };
-  };
-
-  const createAdRequest = (
-    type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing",
-    title: string,
-    budget: number,
-  ) => {
-    if (!currentUser || currentUser.role !== "seller") {
-      return { ok: false, message: "Only sellers can request adverts." };
-    }
-
-    setState((prev) => ({
-      ...prev,
-      adRequests: [
-        {
-          id: createId("ad"),
-          sellerId: currentUser.id,
-          sellerName: currentUser.storeName || currentUser.name,
-          type,
-          title: title.trim(),
-          budget,
-          status: "Pending Approval",
-          createdAt: new Date().toISOString(),
-        },
-        ...prev.adRequests,
-      ],
-    }));
-
-    return { ok: true, message: "Advertisement request submitted." };
-  };
-
-  const sendChatMessage = (receiverId: string, message: string) => {
-    if (!currentUser) {
-      return { ok: false, message: "Please log in to send a message." };
-    }
-
-    const receiver = state.users.find((user) => user.id === receiverId);
-    if (!receiver) {
-      return { ok: false, message: "Recipient user not found." };
-    }
-
-    const newMessage: ChatMessage = {
-      id: createId("chat"),
-      senderId: currentUser.id,
-      senderName: currentUser.role === "seller" ? (currentUser.storeName || currentUser.name) : currentUser.name,
-      receiverId: receiver.id,
-      receiverName: receiver.role === "seller" ? (receiver.storeName || receiver.name) : receiver.name,
-      message: message.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    setState((prev) => ({
-      ...prev,
-      chatMessages: [...prev.chatMessages, newMessage],
-    }));
-
-    return { ok: true, message: "Message sent." };
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        ...state,
-        currentUser,
-        isHydrated,
-        categories: [...allCategories],
-        cartCount,
-        registerUser,
-        login,
-        logout,
-        addToCart,
-        updateCartQuantity,
-        removeFromCart,
-        clearCart,
-        checkout,
-        confirmPayment,
-        addProduct,
-        updateSellerProfile,
-        advanceOrderStatus,
-        markOrderCompleted,
-        addReview,
-        createBulkRequest,
-        createAdRequest,
-        sendChatMessage,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error("useApp must be used within AppProvider");
-  }
-
-  return context;
-};
+  return <AppContext.Provider value={{ ...state, currentUser, isHydrated, serviceError, categories: [...allCategories], cartCount: state.cart.reduce((n, p) => n + p.quantity, 0),
+    registerUser: input => mutate("/auth/register", input), confirmRegistration: (email, code) => mutate("/auth/confirm", { email, code }), login: (email, password) => mutate("/auth/login", { email, password }),
+    logout: async () => { const r = await mutate("/auth/logout", {}); if (!r.ok) toast.error(r.message); else sessionStorage.removeItem("farmyn-checkout-key-v2"); },
+    addToCart, updateCartQuantity, removeFromCart: id => updateCartQuantity(id, 0), clearCart: () => setState(p => ({ ...p, cart: [] })), checkout, confirmPayment,
+    addProduct: input => mutate("/products", input), uploadPhoto: file => api("/uploads", file), updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
+    advanceOrderStatus: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}), markOrderCompleted: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}),
+    addReview: (productId, rating, comment) => mutate("/reviews", { productId, rating, comment }), createBulkRequest: input => mutate("/bulk", input),
+    createAdRequest: (type, title, budget) => mutate("/ads", { type, title, budget }), sendChatMessage: (receiverId, message) => mutate("/messages", { receiverId, message })
+  }}>
+    {serviceError && <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">{serviceError}</div>}
+    {children}
+  </AppContext.Provider>;
+}
+export function useApp() { const value = useContext(AppContext); if (!value) throw new Error("AppProvider is missing."); return value; }

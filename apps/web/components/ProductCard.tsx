@@ -49,7 +49,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <div className="mb-1 flex items-center gap-2 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Star className="h-3 w-3 fill-secondary text-secondary" />
-            {product.rating.toFixed(1)} ({product.reviewCount})
+            {product.reviewCount > 0 ? `${product.rating.toFixed(1)} (${product.reviewCount})` : "No reviews yet"}
           </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3 w-3" />

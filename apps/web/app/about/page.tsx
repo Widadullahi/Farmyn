@@ -19,8 +19,8 @@ export default function AboutPage() {
             <h2 className="text-lg font-semibold text-foreground">Why shop on Farmyn?</h2>
             <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
               <li><strong>Paystack Checkout:</strong> Complete payment on Paystack. Payment confirmation, delivery and seller settlement are separate steps.</li>
-              <li><strong>Zero Intermediaries:</strong> Buy directly from the farmers who grow your food, ensuring fresh produce and fairer prices.</li>
-              <li><strong>Verified Sellers:</strong> Review grower profiles, check their verification badges, and read honest feedback from other buyers.</li>
+              <li><strong>Direct conversations:</strong> Ask sellers about availability, produce quality and delivery before you order.</li>
+              <li><strong>Seller profiles:</strong> Review a seller’s details and any published feedback. A verification badge appears only after a separate business review.</li>
               <li><strong>Bulk Sourcing:</strong> Post custom wholesale requests to receive direct competitive quotes from multiple farms.</li>
             </ul>
           </div>

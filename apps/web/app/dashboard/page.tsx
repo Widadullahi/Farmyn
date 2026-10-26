@@ -102,7 +102,7 @@ export default function DashboardPage() {
       {/* Desktop sidebar — full height */}
       <aside className="dashboard-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
         <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-          <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
+          <img src="/farmyn-icon.svg" alt="Farmyn" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-foreground">
             Farm<span className="text-primary">yn</span>
           </span>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
 
       {/* Mobile icon rail — always visible, expands to full menu on toggle */}
       <aside className="dashboard-sidebar sticky top-0 flex h-screen w-16 shrink-0 flex-col items-center border-r border-border bg-card py-4 lg:hidden">
-        <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
+        <img src="/farmyn-icon.svg" alt="Farmyn" className="h-8 w-8" />
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Open full menu"
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           <aside className="dashboard-sidebar absolute inset-y-0 left-0 flex w-72 flex-col bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
               <span className="flex items-center gap-2">
-                <img src="/farmyn-logo.png" alt="Farmyn" className="h-7 w-7" />
+                <img src="/farmyn-icon.svg" alt="Farmyn" className="h-7 w-7" />
                 <span className="font-display text-base font-bold">Farm<span className="text-primary">yn</span></span>
               </span>
               <button

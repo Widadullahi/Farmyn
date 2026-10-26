@@ -46,7 +46,7 @@ function MarketplaceContent() {
         <div className="container py-8">
           <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">Marketplace</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Buy fresh produce, poultry, livestock, and grains directly from verified local growers across Nigeria.
+            Buy fresh produce, poultry, livestock, and grains directly from local growers across Nigeria.
           </p>
         </div>
       </div>
@@ -126,7 +126,7 @@ function MarketplaceContent() {
           </p>
           <div className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
             <ShieldCheck className="h-3 w-3" />
-            Verified seller marketplace
+            Farm produce marketplace
           </div>
         </div>
 
@@ -146,7 +146,7 @@ function MarketplaceContent() {
               <Search className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="mt-4 text-base font-medium text-foreground">No products found</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try adjusting your filters</p>
+            <p className="mt-1 text-sm text-muted-foreground">{products.length === 0 ? "New listings will appear here once sellers publish them." : "Try adjusting your filters"}</p>
           </motion.div>
         )}
       </div>

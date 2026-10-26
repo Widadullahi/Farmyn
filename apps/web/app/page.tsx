@@ -49,25 +49,25 @@ const features = [
   },
   {
     icon: Truck,
-    title: "Real-time Updates",
+    title: "Order Updates",
     description: "Track your order from the farm gate all the way to your doorstep or warehouse.",
   },
   {
     icon: ShieldCheck,
     title: "Shop with Confidence",
-    description: "We verify growers, view their badges, and check honest reviews before you buy.",
+    description: "Review listing details and speak to the seller before placing your order.",
   },
   {
     icon: TrendingUp,
     title: "Direct Pricing",
-    description: "No hidden fees or unexpected costs. Easily compare offers and minimum order quantities.",
+    description: "Compare listing prices, fees and delivery costs before you pay.",
   },
 ];
 
 const trustPoints = [
-  "Strict seller verification",
+  "Direct seller conversations",
   "Checkout with Paystack",
-  "Post bulk orders & get bids",
+  "Post bulk produce requests",
 ];
 
 const heroBackgrounds = [
@@ -96,12 +96,12 @@ export default function Home() {
     }, new Map<string, number>()),
   ).map(([name, count]) => ({ name, count }));
 
-  const featuredProducts = products.filter((product) => product.featured).slice(0, 4);
+  const featuredProducts = products.slice(0, 4);
 
   const stats = [
     {
-      value: `${products.filter((product) => product.sellerVerified).length}+`,
-      label: "Verified Listings",
+      value: `${products.length}`,
+      label: "Published Listings",
       icon: ShieldCheck,
       color: "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/30",
     },
@@ -112,7 +112,7 @@ export default function Home() {
       color: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30",
     },
     {
-      value: `${bulkRequests.length}+`,
+      value: `${bulkRequests.filter(r => r.status === "Open").length}`,
       label: "Open Bulk Requests",
       icon: Wheat,
       color: "text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-950/30",
@@ -178,7 +178,7 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mt-6 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg"
             >
-              Farmyn connects households, restaurants, and wholesale buyers directly with verified Nigerian growers. Buy fresh produce, livestock, and grains with secure payment protection.
+              Farmyn connects households, restaurants, and wholesale buyers directly with Nigerian growers. Buy fresh produce, livestock, and grains with Paystack checkout.
             </motion.p>
 
             {/* Interactive Search Bar widget */}
@@ -230,99 +230,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Right Column: Example order journey */}
-          <div className="lg:col-span-5 hidden lg:block relative">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative mx-auto w-full max-w-[400px]"
-            >
-              {/* Decorative backgrounds */}
-              <div className="absolute inset-0 -m-4 rounded-3xl bg-gradient-to-tr from-primary/10 to-secondary/10 blur-xl -z-10" />
-
-              {/* Main Card: Example payment summary */}
-              <div className="glass bg-card/90 border border-border/80 rounded-3xl p-6 shadow-elevated">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/50">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                      <Lock className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground">Payment Verification</p>
-                      <h4 className="text-sm font-bold text-foreground">Example order FYN-9024</h4>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-secondary/15 px-3 py-1 text-xs font-semibold text-secondary">
-                    Example · Paid
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">1. Secure Payment</p>
-                      <p className="text-[11px] text-muted-foreground">Payment verified through Paystack</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-primary">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">2. Order Shipped</p>
-                      <p className="text-[11px] text-muted-foreground">Dispatched from Jos, Plateau</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-secondary/20 text-secondary">
-                      <span className="h-2 w-2 rounded-full bg-secondary" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">3. Confirm Delivery</p>
-                      <p className="text-[11px] text-muted-foreground">Confirm receipt when your produce arrives</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 bg-accent/40 rounded-2xl p-4 border border-border/40">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">Example order total:</span>
-                    <span className="font-bold text-primary">NGN 48,500.00</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Overlapping Mini Card: Verified Farmer */}
-              <motion.div
-                initial={{ opacity: 0, x: 20, y: 20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="absolute -bottom-6 -left-10 bg-card border border-border rounded-2xl p-4 shadow-elevated flex items-center gap-3 max-w-[240px]"
-              >
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold animate-pulse">
-                  NO
-                </div>
-                <div>
-                  <h5 className="text-xs font-bold text-foreground flex items-center gap-1">
-                    Mama Ngozi Farm
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                  </h5>
-                  <p className="text-[10px] text-muted-foreground">Plateau • Vegetable Grower</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="h-2.5 w-2.5 fill-secondary text-secondary" />
-                    <span className="text-[10px] font-bold text-foreground">4.8</span>
-                    <span className="text-[9px] text-muted-foreground">(24 reviews)</span>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
+          <aside className="hidden lg:col-span-5 lg:block"><div className="rounded-3xl border border-white/20 bg-white/95 p-8 shadow-xl"><p className="text-xs font-semibold uppercase tracking-widest text-primary">From farm to table</p><h2 className="mt-3 font-display text-2xl font-bold">Know what happens next</h2><ol className="mt-6 space-y-6">{[["01", "Find your produce", "Compare listings, locations, quantities and prices."], ["02", "Talk to the seller", "Agree on availability and delivery before ordering."], ["03", "Pay and follow your order", "Payment confirmation and delivery updates stay with your order."]].map(([number,title,description]) => <li key={number} className="flex gap-4"><span className="text-sm font-bold text-primary">{number}</span><div><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{description}</p></div></li>)}</ol></div></aside>
         </div>
       </section>
 
@@ -423,13 +331,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Listings Section */}
+      {/* Latest Listings Section */}
       <section className="bg-background py-12">
         <div className="container">
           <div className="mb-8 flex items-end justify-between">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Fresh Picks</p>
-              <h2 className="font-display text-3xl font-bold text-foreground">Featured Listings</h2>
+              <h2 className="font-display text-3xl font-bold text-foreground">Latest Listings</h2>
             </div>
             <Link href="/marketplace" className="hidden sm:block">
               <Button variant="outline" className="gap-1.5">
@@ -438,7 +346,8 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
-            {featuredProducts.map((product) => (
+            {featuredProducts.length === 0 && <p className="col-span-full rounded-2xl border border-dashed p-10 text-center text-muted-foreground">No products have been published yet. New listings will appear here.</p>}
+          {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
             ))}
           </div>
@@ -497,7 +406,7 @@ export default function Home() {
       <section className="bg-gradient-subtle py-20 border-t border-b border-border/50">
         <div className="container">
           <div className="mb-12 text-center">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Guaranteed Safety & Nationwide Scale</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-secondary">Direct connections</p>
             <h2 className="font-display text-3xl font-bold text-foreground">Trade with clearer information</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
               Farmyn is built specifically to address the challenges of trust, distance, and logistics in Nigerian agriculture.
@@ -518,7 +427,7 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-bold text-foreground">Reach Any State in Nigeria</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Farmers are no longer restricted to local markets. List your produce and sell directly to clients, restaurants, and wholesalers in Lagos, Abuja, Port Harcourt, or any other state. We help coordinate logistics for smooth interstate delivery.
+                  Farmers are no longer restricted to local markets. List your produce and sell directly to clients, restaurants, and wholesalers in Lagos, Abuja, Port Harcourt, or any other state. Discuss delivery arrangements and costs with your seller before ordering.
                 </p>
               </div>
             </motion.div>
@@ -573,7 +482,7 @@ export default function Home() {
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/90">Bulk Requests</p>
                 <h2 className="font-display text-4xl font-bold text-white">Source produce in bulk</h2>
                 <p className="mt-3 max-w-2xl text-sm text-white/80">
-                  Restaurants, hotels, and retail stores can post their wholesale requirements and get direct quotes from verified local farmers.
+                  Restaurants, hotels, and retail stores can post their wholesale requirements and get direct quotes from local farmers.
                 </p>
               </div>
               <Link href="/bulk">

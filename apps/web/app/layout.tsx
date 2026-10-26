@@ -8,14 +8,14 @@ export const metadata: Metadata = {
     template: "%s | Farmyn Nigeria",
   },
   description:
-    "Buy fresh produce, poultry, livestock and grains directly from verified Nigerian farmers. Pay through Paystack and track your order from confirmation to delivery.",
+    "Buy fresh produce, poultry, livestock and grains directly from Nigerian farmers. Pay through Paystack and track your order from confirmation to delivery.",
   keywords: ["Nigeria", "farm produce", "marketplace", "payments", "Paystack", "agriculture"],
   openGraph: {
     title: "Farmyn Nigeria — Fresh Farm Produce, Pay with Paystack",
     description: "Direct farm trade with Paystack checkout and order tracking.",
     type: "website",
   },
-  icons: { icon: "/farmyn-logo.png", apple: "/farmyn-logo.png" },
+  icons: { icon: "/farmyn-icon.svg" },
 };
 
 export const viewport: Viewport = { themeColor: "#166534" };

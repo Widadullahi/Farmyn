@@ -21,8 +21,8 @@ export default function BulkPage() {
   const [location, setLocation] = useState(currentUser?.location || "");
   const [notes, setNotes] = useState("");
 
-  const handleCreate = () => {
-    const result = createBulkRequest({
+  const handleCreate = async () => {
+    const result = await createBulkRequest({
       title,
       category,
       quantity,

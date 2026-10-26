@@ -27,7 +27,7 @@ export default function CartPage() {
   const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.location || "");
   const [note, setNote] = useState("");
   const [paying, setPaying] = useState(false);
-  useEffect(() => { setDeliveryAddress(currentUser?.location || ""); }, [currentUser?.id]);
+  useEffect(() => { setDeliveryAddress(currentUser?.location || ""); }, [currentUser?.id, currentUser?.location]);
   const [reviewRatings, setReviewRatings] = useState<Record<string, number>>({});
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
@@ -202,11 +202,11 @@ export default function CartPage() {
                                   />
                                   <Button
                                     variant="outline"
-                                    onClick={() => {
-                                      const result = addReview(
+                                    onClick={async () => {
+                                      const result = await addReview(
                                         item.productId,
                                         reviewRatings[item.productId] || 5,
-                                        reviewNotes[item.productId] || "Great delivery experience.",
+                                        reviewNotes[item.productId] || "",
                                       );
 
                                       if (!result.ok) {

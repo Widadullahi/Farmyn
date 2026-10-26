@@ -24,6 +24,7 @@ export default function SellerDashboardPage() {
     chatMessages,
     users,
     addProduct,
+    uploadPhoto,
     updateSellerProfile,
     advanceOrderStatus,
     createAdRequest,
@@ -86,7 +87,9 @@ export default function SellerDashboardPage() {
   const [stockCount, setStockCount] = useState("0");
   const [unit, setUnit] = useState("basket");
   const [minimumOrder, setMinimumOrder] = useState("1 basket");
-  const [image, setImage] = useState("https://images.pexels.com/photos/17674119/pexels-photo-17674119.jpeg?cs=srgb&dl=pexels-gulsahaydgn-17674119.jpeg&fm=jpg");
+  const [image, setImage] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState("");
   const [description, setDescription] = useState("");
 
   // Ads form state
@@ -139,8 +142,9 @@ export default function SellerDashboardPage() {
     });
   };
 
-  const handleAddProduct = () => {
-    const result = addProduct({
+  const handleAddProduct = async () => {
+    if (photoBusy || !image) { toast.error("Upload a product photo first."); return; }
+    const result = await addProduct({
       name: productName,
       category,
       price: Number(price),
@@ -166,8 +170,8 @@ export default function SellerDashboardPage() {
     setDescription("");
   };
 
-  const handleAdRequest = () => {
-    const result = createAdRequest(adType, adTitle, Number(adBudget));
+  const handleAdRequest = async () => {
+    const result = await createAdRequest(adType, adTitle, Number(adBudget));
     if (!result.ok) {
       toast.error(result.message);
       return;
@@ -178,12 +182,13 @@ export default function SellerDashboardPage() {
     setAdBudget("0");
   };
 
-  const handleSendDashboardMessage = (e: React.FormEvent) => {
+  const handleSendDashboardMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInputText.trim() || !activeChatUserId) return;
 
-    sendChatMessage(activeChatUserId, chatInputText.trim());
-    setChatInputText("");
+    const result = await sendChatMessage(activeChatUserId, chatInputText.trim());
+    if (result.ok) setChatInputText("");
+    else toast.error(result.message);
   };
 
   // Dashboard chat helper variables
@@ -213,7 +218,7 @@ export default function SellerDashboardPage() {
       {/* Desktop sidebar — full height */}
       <aside className="dashboard-sidebar fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card lg:flex">
         <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-          <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
+          <img src="/farmyn-icon.svg" alt="Farmyn" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-foreground">
             Farm<span className="text-primary">yn</span>
           </span>
@@ -240,7 +245,7 @@ export default function SellerDashboardPage() {
 
       {/* Mobile icon rail — always visible, expands to full menu on toggle */}
       <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-40 flex w-16 flex-col items-center border-r border-border bg-card py-4 lg:hidden">
-        <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
+        <img src="/farmyn-icon.svg" alt="Farmyn" className="h-8 w-8" />
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Open full menu"
@@ -280,7 +285,7 @@ export default function SellerDashboardPage() {
           <aside className="dashboard-sidebar absolute inset-y-0 left-0 flex w-72 flex-col bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
               <span className="flex items-center gap-2">
-                <img src="/farmyn-logo.png" alt="Farmyn" className="h-7 w-7" />
+                <img src="/farmyn-icon.svg" alt="Farmyn" className="h-7 w-7" />
                 <span className="font-display text-base font-bold">Farm<span className="text-primary">yn</span></span>
               </span>
               <button onClick={() => setMobileOpen(false)} aria-label="Hide full menu" title="Hide full menu" className="rounded-md p-2 text-muted-foreground hover:bg-muted">
@@ -340,7 +345,7 @@ export default function SellerDashboardPage() {
                     <Input placeholder="Unit (e.g. basket)" value={unit} onChange={(event) => setUnit(event.target.value)} />
                     <Input placeholder="Min order (e.g. 1 basket)" value={minimumOrder} onChange={(event) => setMinimumOrder(event.target.value)} />
                   </div>
-                  <Input placeholder="Image URL" value={image} onChange={(event) => setImage(event.target.value)} />
+                  <div className="space-y-2"><label htmlFor="product-photo" className="text-sm font-medium">Product photo</label><Input id="product-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={photoBusy} onChange={async event => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast.error("Choose a photo under 3 MB."); return; } setPhotoBusy(true); try { const result = await uploadPhoto(file); setImage(result.image); setPhotoPreview(result.preview); } catch(e) { toast.error(e instanceof Error ? e.message : "Upload failed."); } finally { setPhotoBusy(false); } }} /><p className="text-xs text-muted-foreground">JPEG, PNG or WebP, up to 3 MB. {photoBusy ? "Uploading…" : image ? "Photo uploaded." : "Choose a clear photo of your produce."}</p>{photoPreview && <img src={photoPreview} alt="Product photo preview" className="h-24 w-24 rounded-lg object-cover" />}</div>
                   <Textarea placeholder="Detailed product description..." value={description} onChange={(event) => setDescription(event.target.value)} />
                   <Button className="mt-2 gap-2 bg-primary hover:bg-primary/90" onClick={handleAddProduct}>
                     <Plus className="h-4 w-4" /> Add Product

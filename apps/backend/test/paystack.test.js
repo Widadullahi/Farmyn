@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { createApp } = require('../index');
+const { createApp } = require('../sandbox');
 
 const secret = 'sk_test_farmyn_test_fixture';
 const token = 'a'.repeat(64);

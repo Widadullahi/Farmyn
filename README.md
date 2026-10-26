@@ -1,21 +1,21 @@
 # Farmyn Nigeria
 
-A farm-produce marketplace with buyer/seller dashboards, listings, local chat and Paystack hosted checkout.
+Farm produce marketplace with an AWS-backed API, Cognito accounts, DynamoDB records, private S3 photos and Paystack test checkout.
+
+## Status
+
+Production preparation is implemented; AWS deployment and hosted acceptance are still required. Live payments are blocked. There is no seeded catalogue, demo account, sample order, fake review or local account fallback.
+
+Read [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md) for the architecture, deployment procedure and release requirements. The earlier local-file payment adapter exists only for regression tests and is excluded from the Lambda package.
 
 ## Development
 
-- `apps/web`: Next.js frontend on port 3000.
-- `apps/backend`: Express Paystack test integration on port 3001.
+Use Node.js 22 or newer. Run `npm ci`, copy each app's `.env.example` to a private `.env`, and supply your AWS staging outputs. Run `npm run dev`. Without AWS configuration the API fails closed and the site shows a setup message.
 
-Install with `npm ci`, configure the two `.env.example` files, then run `npm run dev`.
+- `apps/web`: Next.js frontend; server-side `API_ORIGIN` forwards `/api` to the backend.
+- `apps/backend`: Express API; deployed to Lambda behind API Gateway with the SAM template in `infra/`.
+- `npm test --workspace backend`: API security and payment regression tests with isolated test doubles.
+- `npm run lint --workspace web`: frontend lint checks.
+- `npm run build`: production frontend build.
 
-See [PAYSTACK_SETUP.md](PAYSTACK_SETUP.md) for keys, callbacks, webhooks, testing and the remaining production requirements. Keep the secret key on the backend only.
-
-The payment adapter is test-only. Marketplace accounts, chat and listings still use browser storage; payment records use a local server file and a test catalogue. A production database/authentication service and seller settlement workflow are required before accepting live payments.
-
-## Commands
-
-- `npm run dev`: start both apps.
-- `npm run build`: build the frontend.
-- `npm test --workspace backend`: test payment initialization and verification with a fake provider.
-- `npm run lint`: run project linting (the inherited lint setup requires repair).
+Private environment files, payment test records and generated builds are ignored. The deployment build copies an explicit source allowlist so private local files cannot enter the Lambda archive.

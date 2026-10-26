@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -15,18 +16,25 @@ export default function LoginPage() {
   const { login } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const result = login(email, password);
+    if (busy) return;
+    setBusy(true);
+    const result = await login(email, password);
+    setBusy(false);
     if (!result.ok) {
       toast.error(result.message);
       return;
     }
 
     toast.success(result.message);
-    router.push(result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
+    const next = sessionStorage.getItem("farmyn-return-to");
+    sessionStorage.removeItem("farmyn-return-to");
+    setPassword("");
+    router.push(next?.startsWith("/checkout/complete?") ? next : result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
   };
 
   return (
@@ -34,10 +42,7 @@ export default function LoginPage() {
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
           <Link href="/" className="mb-10 inline-flex items-center gap-2">
-            <img src="/farmyn-logo.png" alt="Farmyn" className="h-8 w-8" />
-            <span className="font-display text-lg font-bold text-foreground">
-              Farm<span className="text-primary">yn</span>
-            </span>
+            <BrandLogo />
           </Link>
 
           <h1 className="font-display text-2xl font-bold text-foreground">Welcome back</h1>
@@ -70,11 +75,12 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full gap-2">
+            <Button type="submit" disabled={busy} className="w-full gap-2">
               Log in <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
 
+          <p className="mt-4 text-sm"><Link href="/forgot-password" className="text-primary">Forgot password?</Link></p>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="font-semibold text-primary hover:underline">Create account</Link>

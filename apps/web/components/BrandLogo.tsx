@@ -2,9 +2,7 @@ export default function BrandLogo({ inverse = false }: { inverse?: boolean }) {
   return (
     <span className="flex shrink-0 items-center gap-2.5">
       <span className={inverse ? "rounded-xl bg-white p-1" : ""}>
-        <svg aria-hidden="true" viewBox="205 160 102 96" className="h-11 w-12 shrink-0 overflow-hidden">
-          <image href="/farmyn-logo.png" width="512" height="512" />
-        </svg>
+        <img src="/farmyn-icon.svg" alt="" aria-hidden="true" className="h-11 w-12 shrink-0" />
       </span>
       <span>
         <span className={`block font-display text-[28px] font-bold leading-none tracking-tight ${inverse ? "text-white" : "text-[#104f3c]"}`}>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { toast } from "sonner";
+
 import BrandLogo from "@/components/BrandLogo";
 
 const Footer = () => {
@@ -16,17 +16,9 @@ const Footer = () => {
               <BrandLogo inverse />
             </Link>
             <p className="mb-5 text-sm leading-relaxed text-primary-foreground/60">
-              Farmyn connects verified local farmers directly with households and businesses looking for fresh produce, poultry, livestock, and grains.
+              Farmyn connects local farmers directly with households and businesses looking for fresh produce, poultry, livestock, and grains.
             </p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter your email"
-                className="h-9 border-primary-foreground/20 bg-primary-foreground/5 text-primary-foreground placeholder:text-primary-foreground/30 focus-visible:ring-secondary"
-              />
-              <Button size="sm" variant="secondary" className="shrink-0 gap-1" onClick={() => toast.success("Thanks for subscribing.")}>
-                Subscribe <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <Link href="/register" className="inline-flex rounded-lg border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">Join Farmyn</Link>
           </div>
 
           <div className="grid grid-cols-3 gap-8 md:col-span-8">
@@ -59,7 +51,7 @@ const Footer = () => {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-primary-foreground/10 pt-6 sm:flex-row">
           <p className="text-xs text-primary-foreground/40">
-            Copyright 2026 Farmyn Nigeria. All rights reserved.
+            Copyright {new Date().getFullYear()} Farmyn Nigeria. All rights reserved.
           </p>
           <div className="flex gap-6">
             <span className="text-xs text-primary-foreground/40">Made in Nigeria</span>
