@@ -331,22 +331,22 @@ export default function SellerDashboardPage() {
                 <h2 className="text-lg font-bold text-foreground">Add New Product</h2>
                 <p className="text-xs text-muted-foreground mt-1">List produce, poultry, grains, or ingredients directly to the marketplace.</p>
                 <div className="mt-5 grid gap-3 text-sm">
-                  <Input placeholder="Product name" value={productName} onChange={(event) => setProductName(event.target.value)} />
-                  <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value as typeof category)}>
+                  <div className="space-y-1.5"><label htmlFor="product-name" className="text-xs font-semibold text-foreground">Product name</label><Input id="product-name" placeholder="e.g. Fresh tomatoes" value={productName} onChange={(event) => setProductName(event.target.value)} /></div>
+                  <div className="space-y-1.5"><label htmlFor="product-category" className="text-xs font-semibold text-foreground">Product type</label><select id="product-category" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value as typeof category)}>
                     {marketplaceCategories.map((entry) => (
                       <option key={entry} value={entry}>{entry}</option>
                     ))}
-                  </select>
+                  </select></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Price (NGN)" type="number" value={price} onChange={(event) => setPrice(event.target.value)} />
-                    <Input placeholder="Stock count" type="number" value={stockCount} onChange={(event) => setStockCount(event.target.value)} />
+                    <div className="space-y-1.5"><label htmlFor="product-price" className="text-xs font-semibold text-foreground">Price per unit (₦)</label><Input id="product-price" placeholder="0" type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} /></div>
+                    <div className="space-y-1.5"><label htmlFor="product-stock" className="text-xs font-semibold text-foreground">Quantity in stock</label><Input id="product-stock" placeholder="0" type="number" min="0" value={stockCount} onChange={(event) => setStockCount(event.target.value)} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Unit (e.g. basket)" value={unit} onChange={(event) => setUnit(event.target.value)} />
-                    <Input placeholder="Min order (e.g. 1 basket)" value={minimumOrder} onChange={(event) => setMinimumOrder(event.target.value)} />
+                    <div className="space-y-1.5"><label htmlFor="product-unit" className="text-xs font-semibold text-foreground">Unit</label><Input id="product-unit" placeholder="e.g. basket" value={unit} onChange={(event) => setUnit(event.target.value)} /></div>
+                    <div className="space-y-1.5"><label htmlFor="product-minimum" className="text-xs font-semibold text-foreground">Minimum order</label><Input id="product-minimum" placeholder="e.g. 1 basket" value={minimumOrder} onChange={(event) => setMinimumOrder(event.target.value)} /></div>
                   </div>
                   <div className="space-y-2"><label htmlFor="product-photo" className="text-sm font-medium">Product photo</label><Input id="product-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={photoBusy} onChange={async event => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast.error("Choose a photo under 3 MB."); return; } setPhotoBusy(true); try { const result = await uploadPhoto(file); setImage(result.image); setPhotoPreview(result.preview); } catch(e) { toast.error(e instanceof Error ? e.message : "Upload failed."); } finally { setPhotoBusy(false); } }} /><p className="text-xs text-muted-foreground">JPEG, PNG or WebP, up to 3 MB. {photoBusy ? "Uploading…" : image ? "Photo uploaded." : "Choose a clear photo of your produce."}</p>{photoPreview && <img src={photoPreview} alt="Product photo preview" className="h-24 w-24 rounded-lg object-cover" />}</div>
-                  <Textarea placeholder="Detailed product description..." value={description} onChange={(event) => setDescription(event.target.value)} />
+                  <div className="space-y-1.5"><label htmlFor="product-description" className="text-xs font-semibold text-foreground">Description</label><Textarea id="product-description" placeholder="Describe freshness, size, and harvest details" value={description} onChange={(event) => setDescription(event.target.value)} /></div>
                   <Button className="mt-2 gap-2 bg-primary hover:bg-primary/90" onClick={handleAddProduct}>
                     <Plus className="h-4 w-4" /> Add Product
                   </Button>

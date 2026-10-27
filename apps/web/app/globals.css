@@ -36,11 +36,29 @@
 .dashboard-topbar h1 { letter-spacing: 0; }
 .dashboard-main { animation: dashboard-enter .25s ease-out; }
 .dashboard-eyebrow { font-size: 9px; letter-spacing: .19em; font-weight: 700; color: #6c8575; }
-.dashboard-panel { border: 1px solid #e6ebed; border-radius: 14px; background: #fff; box-shadow: 0 2px 4px #172c2303; }
-.dashboard-metric { padding: 22px; border: 1px solid #e6ebed; border-radius: 14px; background: #fff; color: #33483e; }
-.dashboard-metric-primary { background: #173e2d; color: #f2f6ed; border-color: #173e2d; }
-.dashboard-metric-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; background: #eff4f0; color: #47724f; }
-.dashboard-metric-primary .dashboard-metric-icon { background: #31543e; color: #c5e7a4; }
+.dashboard-hero { background: radial-gradient(circle at 80% 10%, #386a4c 0, transparent 37%), linear-gradient(115deg, #123d2d 0%, #1e5139 62%, #2d6146 100%); box-shadow: 0 16px 36px #173e2d24; }
+.dashboard-hero .dashboard-eyebrow { color: #c9e3ad; }
+.dashboard-hero-orb { position: absolute; pointer-events: none; border: 1px solid #d7e9a438; border-radius: 50%; }
+.dashboard-hero-orb-one { width: 440px; height: 440px; right: -110px; top: -260px; }
+.dashboard-hero-orb-two { width: 300px; height: 300px; right: 110px; top: -190px; }
+.dashboard-hero-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid #ffffff31; border-radius: 99px; background: #ffffff14; }
+.dashboard-hero-select { min-width: 120px; border: 1px solid #ffffff55; background: #ffffff17; color: #fff; }
+.dashboard-hero-select option { background: #1d4a35; color: #fff; }
+.dashboard-context-note { border: 1px solid #dde8d6; background: #f4f8ef; color: #49604d; }
+.dashboard-context-note strong { color: #2c4d38; }
+.dashboard-panel { border: 1px solid #e2e9e4; border-radius: 18px; background: #fff; box-shadow: 0 4px 18px #172c2308; }
+.dashboard-metric { --metric-accent: #668b67; --metric-icon-bg: #edf5ed; --metric-icon-color: #3d704b; position: relative; display: flex; flex-direction: column; min-height: 188px; padding: 20px 21px 17px; border: 1px solid #e2e9e4; border-radius: 18px; background: #fff; color: #223b2d; box-shadow: 0 4px 18px #172c2308; }
+.dashboard-metric::before { content: ''; position: absolute; inset: 0 18px auto; height: 3px; border-radius: 0 0 3px 3px; background: var(--metric-accent); }
+.dashboard-metric-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dashboard-metric-label { max-width: 155px; font-size: 11px; font-weight: 700; line-height: 1.45; letter-spacing: .07em; text-transform: uppercase; color: #66776c; }
+.dashboard-metric-icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex: none; border-radius: 12px; background: var(--metric-icon-bg); color: var(--metric-icon-color); }
+.dashboard-metric-value { margin: 16px 0 18px; font-size: clamp(2rem, 2.5vw, 2.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -.045em; }
+.dashboard-metric-hint { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 15px; border-top: 1px solid #edf1ed; font-size: 11px; line-height: 1.35; color: #718176; }
+.dashboard-metric-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--metric-accent); }
+.dashboard-metric-active { --metric-accent: #b18c42; --metric-icon-bg: #fbf5e8; --metric-icon-color: #9a7130; }
+.dashboard-metric-complete { --metric-accent: #68958a; --metric-icon-bg: #eaf4f1; --metric-icon-color: #447e71; }
+.dashboard-metric-listing { --metric-accent: #839e5a; --metric-icon-bg: #f1f5e8; --metric-icon-color: #6a8141; }
+.dashboard-metric-value { font-variant-numeric: tabular-nums; }
 .dashboard-workspace input:focus-visible, .dashboard-workspace select:focus-visible,
 .dashboard-workspace summary:focus-visible { outline: 2px solid #548a56; outline-offset: 3px; }
 .dashboard-workspace button, .dashboard-workspace a { -webkit-tap-highlight-color: transparent; }
