@@ -6,7 +6,7 @@ import { startCheckout, verifyCheckout } from "@/lib/paystack";
 import { allCategories, AppState, BulkRequest, initialAppState, User, UserRole } from "@/lib/app-data";
 type Result = { ok: boolean; message: string; user?: User; authorizationUrl?: string };
 interface RegisterInput { role: UserRole; name: string; email: string; phone: string; password: string; location: string; storeName?: string }
-interface ProductInput { name: string; category: string; price: number; stockCount: number; unit: string; minimumOrder: string; image: string; location: string; description: string }
+interface ProductInput { name: string; category: string; price: number; oldPrice?: number | null; stockCount: number; unit: string; minimumOrder: string; image: string; location: string; description: string }
 interface AppContextValue extends AppState {
   currentUser: User | null; isHydrated: boolean; serviceError: string; categories: string[]; cartCount: number;
   registerUser: (input: RegisterInput) => Promise<Result>;

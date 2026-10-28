@@ -85,9 +85,10 @@ export default function SellerDashboardPage() {
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState(marketplaceCategories[0]);
   const [price, setPrice] = useState("0");
+  const [oldPrice, setOldPrice] = useState("");
   const [stockCount, setStockCount] = useState("0");
-  const [unit, setUnit] = useState("basket");
-  const [minimumOrder, setMinimumOrder] = useState("1 basket");
+  const [unit, setUnit] = useState("");
+  const [minimumOrder, setMinimumOrder] = useState("");
   const [image, setImage] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoPreview, setPhotoPreview] = useState("");
@@ -150,9 +151,10 @@ export default function SellerDashboardPage() {
     setProductName("");
     setCategory(marketplaceCategories[0]);
     setPrice("0");
+    setOldPrice("");
     setStockCount("0");
-    setUnit("basket");
-    setMinimumOrder("1 basket");
+    setUnit("");
+    setMinimumOrder("");
     setImage("");
     setPhotoPreview("");
     setDescription("");
@@ -162,6 +164,7 @@ export default function SellerDashboardPage() {
     setProductName(item.name);
     setCategory(item.category as typeof category);
     setPrice(String(item.price));
+    setOldPrice(item.oldPrice == null ? "" : String(item.oldPrice));
     setStockCount(String(item.stockCount));
     setUnit(item.unit);
     setMinimumOrder(item.minimumOrder);
@@ -173,10 +176,12 @@ export default function SellerDashboardPage() {
   const handleSaveProduct = async () => {
     if (photoBusy) return;
     if (!editingProductId && !image) { toast.error("Upload a product photo first."); return; }
+    if (oldPrice.trim() && Number(oldPrice) <= Number(price)) { toast.error("Old price must be higher than the selling price."); return; }
     const input = {
       name: productName,
       category,
       price: Number(price),
+      ...(oldPrice.trim() ? { oldPrice: Number(oldPrice) } : editingProductId ? { oldPrice: null } : {}),
       stockCount: Number(stockCount),
       unit,
       minimumOrder,
@@ -363,9 +368,11 @@ export default function SellerDashboardPage() {
                     ))}
                   </select></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1.5"><label htmlFor="product-price" className="text-xs font-semibold text-foreground">Price per unit (₦)</label><Input id="product-price" placeholder="0" type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} /></div>
-                    <div className="space-y-1.5"><label htmlFor="product-stock" className="text-xs font-semibold text-foreground">Quantity in stock</label><Input id="product-stock" placeholder="0" type="number" min="0" value={stockCount} onChange={(event) => setStockCount(event.target.value)} /></div>
+                    <div className="space-y-1.5"><label htmlFor="product-price" className="text-xs font-semibold text-foreground">Selling price (₦)</label><Input id="product-price" placeholder="0" type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} /></div>
+                    <div className="space-y-1.5"><label htmlFor="product-old-price" className="text-xs font-semibold text-foreground">Old price (optional)</label><Input id="product-old-price" placeholder="e.g. 7500" type="number" min="0" value={oldPrice} onChange={(event) => setOldPrice(event.target.value)} /></div>
                   </div>
+                  <p className="-mt-1 text-[11px] text-muted-foreground">If set, the old price appears crossed out beside your selling price.</p>
+                  <div className="space-y-1.5"><label htmlFor="product-stock" className="text-xs font-semibold text-foreground">Quantity in stock</label><Input id="product-stock" placeholder="0" type="number" min="0" value={stockCount} onChange={(event) => setStockCount(event.target.value)} /></div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5"><label htmlFor="product-unit" className="text-xs font-semibold text-foreground">Unit</label><Input id="product-unit" placeholder="e.g. basket" value={unit} onChange={(event) => setUnit(event.target.value)} /></div>
                     <div className="space-y-1.5"><label htmlFor="product-minimum" className="text-xs font-semibold text-foreground">Minimum order</label><Input id="product-minimum" placeholder="e.g. 1 basket" value={minimumOrder} onChange={(event) => setMinimumOrder(event.target.value)} /></div>
@@ -407,7 +414,7 @@ export default function SellerDashboardPage() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-bold text-primary text-sm">{formatNaira(product.price)}</p>
+                          <p className="font-bold text-primary text-sm">{formatNaira(product.price)}{product.oldPrice != null && product.oldPrice > product.price && <span className="ml-2 font-normal text-muted-foreground line-through">{formatNaira(product.oldPrice)}</span>}</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5">Min: {product.minimumOrder}</p>
                           <Button type="button" variant="outline" size="sm" className="mt-2 h-8 gap-1.5 text-xs" onClick={() => startEditingProduct(product)}><Pencil className="h-3 w-3" /> Edit</Button>
                         </div>

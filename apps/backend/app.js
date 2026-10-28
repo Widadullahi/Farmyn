@@ -111,6 +111,7 @@ function createApp(config = {}, dependencies = {}) {
     }
     const previous = record.data;
     const data = { ...previous, ...v, image: v.image || previous.image, inStock: v.stockCount > 0, version: (previous.version || 0) + 1 };
+    if (v.oldPrice === null) delete data.oldPrice;
     await store.transact([{ Put: {
       Item: { pk: 'PRODUCT', sk: id, data },
       ConditionExpression: '#d.sellerId = :seller AND #d.stockCount = :stock AND #d.price = :price AND ' + (previous.version === undefined ? 'attribute_not_exists(#d.version)' : '#d.version = :version'),

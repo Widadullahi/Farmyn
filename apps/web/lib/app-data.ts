@@ -19,6 +19,7 @@ export interface Product {
   name: string;
   category: string;
   price: number;
+  oldPrice?: number | null;
   image: string;
   sellerId: string;
   sellerName: string;

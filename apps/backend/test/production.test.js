@@ -44,13 +44,17 @@ test('only the listing owner can edit validated details without replacing the ph
   await f.store.put({ pk: 'PROFILE', sk: owner.id, data: { ...owner, role: 'seller' } });
   assert.equal((await f.request(path, { ...input, sellerId: 'forged' }, { method: 'PATCH' })).status, 400);
   assert.equal((await f.request(path, { ...input, price: -1 }, { method: 'PATCH' })).status, 400);
+  assert.equal((await f.request(path, { ...input, oldPrice: 2000 }, { method: 'PATCH' })).status, 400);
   assert.equal((await f.request('/api/products/someone-elses-listing', input, { method: 'PATCH' })).status, 404);
-  assert.equal((await f.request(path, input, { method: 'PATCH' })).status, 200);
+  assert.equal((await f.request(path, { ...input, oldPrice: 3000 }, { method: 'PATCH' })).status, 200);
   const updated = (await f.store.get('PRODUCT', 'listing-a')).data;
   assert.equal(updated.image, `products/${owner.id}/photo.jpg`);
   assert.equal(updated.stockCount, 0);
   assert.equal(updated.inStock, false);
+  assert.equal(updated.oldPrice, 3000);
   assert.equal(updated.version, 1);
+  assert.equal((await f.request(path, { ...input, oldPrice: null }, { method: 'PATCH' })).status, 200);
+  assert.equal((await f.store.get('PRODUCT', 'listing-a')).data.oldPrice, undefined);
 });
 test('unowned orders and undelivered products cannot be updated or reviewed', async t => { const f = await fixture(t); assert.equal((await f.request('/api/orders/private/advance', {})).status, 404); assert.equal((await f.request('/api/reviews', { productId: 'private', rating: 5, comment: 'Good product' })).status, 403); });
 test('messages are written atomically for sender and receiver with server-owned identities', async t => { const f = await fixture(t); await f.store.put({ pk: 'PROFILE', sk: 'seller-a', data: { ...owner, id: 'seller-a', role: 'seller', name: 'Test Seller' } }); const r = await f.request('/api/messages', { receiverId: 'seller-a', message: '<b>Hello</b>' }); assert.equal(r.status, 201); const mine = await f.store.list(`MESSAGES#${owner.id}`), theirs = await f.store.list('MESSAGES#seller-a'); assert.equal(mine.length, 1); assert.deepEqual(mine[0].data, theirs[0].data); assert.equal(mine[0].data.senderId, owner.id); assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Hi', senderId: 'forged' })).status, 400); });

@@ -63,7 +63,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         </p>
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <div>
-            <p className="font-display text-lg font-bold text-primary">{formatNaira(product.price)}</p>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"><p className="font-display text-lg font-bold text-primary">{formatNaira(product.price)}</p>{product.oldPrice != null && product.oldPrice > product.price && <span className="text-xs text-muted-foreground line-through">{formatNaira(product.oldPrice)}</span>}</div>
             <p className="text-[11px] text-muted-foreground">
               {product.unit} • MOQ {product.minimumOrder}
             </p>
