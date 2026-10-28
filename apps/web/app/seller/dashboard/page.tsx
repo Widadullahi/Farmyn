@@ -433,55 +433,31 @@ export default function SellerDashboardPage() {
                 <h2 className="text-lg font-bold text-foreground">Customer Orders</h2>
                 <p className="text-xs text-muted-foreground mt-1">Manage paid orders and delivery. Seller settlement is handled separately from checkout.</p>
               </div>
-              <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
-                {sellerOrders.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-muted-foreground">
-                    No buyer orders received yet.
-                  </div>
-                ) : (
-                  sellerOrders.map((order) => (
-                    <div key={order.id} className="rounded-md border border-border p-5 bg-muted/10 hover:border-border/80 transition-colors">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-foreground">{order.id}</span>
-                            <span className="text-xs text-muted-foreground">• {formatDate(order.createdAt)}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1 font-semibold">
-                            Customer: {order.buyerName} | Delivery to: {order.deliveryAddress}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="rounded-full bg-accent/60 px-3 py-1 text-[10px] font-semibold text-accent-foreground">
-                            {order.status}
-                          </span>
-                          <span className="rounded-full bg-secondary/15 px-3 py-1 text-[10px] font-semibold text-secondary">
-                            {order.paymentStatus}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 border-y border-border/40 py-3 space-y-2 text-xs text-muted-foreground bg-card/40 rounded-md px-4">
-                        {order.items.map((item) => (
-                          <div key={`${order.id}-${item.productId}`} className="flex items-center justify-between">
-                            <span>{item.name} <strong className="text-foreground">x {item.quantity}</strong></span>
-                            <span className="font-semibold text-foreground">{formatNaira(item.unitPrice * item.quantity)}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between">
-                        <p className="text-sm font-bold text-foreground">Order Subtotal: {formatNaira(order.subtotal)}</p>
-                        {order.paymentStatus === "Paid" && order.status !== "Delivered" && order.status !== "Completed" && (
-                          <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => advanceOrderStatus(order.id)}>
-                            Advance Status
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              {sellerOrders.length === 0 ? <div className="py-12 text-center text-sm text-muted-foreground">No buyer orders received yet.</div> : (
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <caption className="sr-only">Seller orders, customers, products, payment and delivery status</caption>
+                    <thead className="bg-muted/50 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"><tr>
+                      <th scope="col" className="px-4 py-3">Order</th>
+                      <th scope="col" className="px-4 py-3">Customer</th>
+                      <th scope="col" className="px-4 py-3">Products</th>
+                      <th scope="col" className="px-4 py-3">Status</th>
+                      <th scope="col" className="px-4 py-3">Payment</th>
+                      <th scope="col" className="px-4 py-3 text-right">Subtotal</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-border">
+                      {sellerOrders.map(order => <tr key={order.id} className="align-top transition-colors hover:bg-muted/20">
+                        <td className="px-4 py-4"><p className="max-w-36 truncate font-semibold text-foreground" title={order.id}>{order.id}</p><p className="mt-1 whitespace-nowrap text-[11px] text-muted-foreground">{formatDate(order.createdAt)}</p>{order.paymentStatus === "Paid" && order.status !== "Delivered" && order.status !== "Completed" && <Button size="sm" variant="outline" className="mt-2 h-7 whitespace-nowrap px-2 text-[11px]" onClick={() => advanceOrderStatus(order.id)}>Advance Status</Button>}</td>
+                        <td className="px-4 py-4"><p className="font-semibold text-foreground">{order.buyerName}</p><p className="mt-1 max-w-40 text-[11px] leading-relaxed text-muted-foreground">{order.deliveryAddress}</p></td>
+                        <td className="px-4 py-4"><div className="max-w-48 space-y-1.5">{order.items.map(item => <p key={`${order.id}-${item.productId}`} className="text-foreground">{item.name} <span className="whitespace-nowrap text-muted-foreground">× {item.quantity}</span></p>)}</div></td>
+                        <td className="px-4 py-4"><span className="inline-flex whitespace-nowrap rounded-full bg-accent/70 px-2.5 py-1 text-[11px] font-medium text-accent-foreground">{order.status}</span></td>
+                        <td className="px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${order.paymentStatus === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>{order.paymentStatus}</span></td>
+                        <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-foreground">{formatNaira(order.subtotal)}</td>
+                      </tr>)}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
