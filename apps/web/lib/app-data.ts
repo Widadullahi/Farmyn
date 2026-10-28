@@ -121,6 +121,8 @@ export interface ChatMessage {
   receiverId: string;
   receiverName: string;
   message: string;
+  productId?: string;
+  productName?: string;
   createdAt: string;
 }
 

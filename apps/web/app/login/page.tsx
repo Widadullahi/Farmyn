@@ -34,7 +34,7 @@ export default function LoginPage() {
     const next = sessionStorage.getItem("farmyn-return-to");
     sessionStorage.removeItem("farmyn-return-to");
     setPassword("");
-    router.push(next?.startsWith("/checkout/complete?") ? next : result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
+    router.push(next?.startsWith("/checkout/complete?") || next?.startsWith("/chat?user=") ? next : result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
   };
 
   return (

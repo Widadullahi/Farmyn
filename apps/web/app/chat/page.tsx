@@ -3,19 +3,21 @@
 import { toast } from "sonner";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { MessageSquare, Send, ShieldCheck, UserCircle2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDate } from "@/lib/app-data";
+import { formatDate, formatNaira } from "@/lib/app-data";
 
 function ChatContent() {
   const router = useRouter();
   const params = useSearchParams();
   const targetUserId = params.get("user");
+  const targetProductId = params.get("product");
 
-  const { currentUser, isHydrated, chatMessages, users, sendChatMessage } = useApp();
+  const { currentUser, isHydrated, chatMessages, users, products, sendChatMessage } = useApp();
   const [activeUserId, setActiveUserId] = useState<string | null>(targetUserId);
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -23,9 +25,10 @@ function ChatContent() {
   // Redirect if not logged in
   useEffect(() => {
     if (isHydrated && !currentUser) {
+      sessionStorage.setItem("farmyn-return-to", `/chat?${params.toString()}`);
       router.push("/login");
     }
-  }, [currentUser, isHydrated, router]);
+  }, [currentUser, isHydrated, params, router]);
 
   // Handle URL change to select target user
   useEffect(() => {
@@ -84,6 +87,9 @@ function ChatContent() {
     });
 
   const activePartner = users.find((u) => u.id === activeUserId);
+  const enquiryProduct = targetUserId === activeUserId
+    ? products.find((product) => product.id === targetProductId && product.sellerId === activeUserId)
+    : undefined;
   const activeConversation = myMessages.filter(
     (msg) =>
       (msg.senderId === currentUser.id && msg.receiverId === activeUserId) ||
@@ -94,7 +100,7 @@ function ChatContent() {
     e.preventDefault();
     if (!messageText.trim() || !activeUserId) return;
 
-    const result = await sendChatMessage(activeUserId, messageText.trim());
+    const result = await sendChatMessage(activeUserId, messageText.trim(), enquiryProduct?.id);
     if (result.ok) setMessageText("");
     else toast.error(result.message);
   };
@@ -174,6 +180,18 @@ function ChatContent() {
                 </div>
               </div>
 
+              {enquiryProduct && (
+                <div className="flex items-center gap-3 border-b border-border bg-accent/30 px-4 py-3">
+                  <img src={enquiryProduct.image} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Enquiry about this product</p>
+                    <p className="truncate text-sm font-semibold text-foreground">{enquiryProduct.name}</p>
+                    <p className="text-xs text-primary">{formatNaira(enquiryProduct.price)} · {enquiryProduct.unit}</p>
+                  </div>
+                  <Link href={`/store/${encodeURIComponent(enquiryProduct.sellerId)}`} className="text-xs font-semibold text-primary hover:underline">View store</Link>
+                </div>
+              )}
+
               {/* Message History */}
               <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-muted/5">
                 {activeConversation.length === 0 ? (
@@ -195,6 +213,11 @@ function ChatContent() {
                               : "bg-card border border-border text-foreground rounded-tl-none"
                           }`}
                         >
+                          {msg.productId && (
+                            <Link href={`/chat?user=${encodeURIComponent(activeUserId || "")}&product=${encodeURIComponent(msg.productId)}`} className={`mb-1 block text-xs font-semibold underline ${isMe ? "text-primary-foreground" : "text-primary"}`}>
+                              Re: {msg.productName || "Product enquiry"}
+                            </Link>
+                          )}
                           <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                           <span
                             className={`block text-[10px] mt-1 text-right ${
@@ -214,12 +237,13 @@ function ChatContent() {
               {/* Chat Input form */}
               <form onSubmit={handleSendMessage} className="p-4 border-t border-border flex gap-2">
                 <Input
-                  placeholder="Type your message..."
+                  placeholder={enquiryProduct ? `Ask about ${enquiryProduct.name}...` : "Type your message..."}
+                  aria-label="Message"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   className="flex-1"
                 />
-                <Button type="submit" size="icon" className="shrink-0 bg-primary hover:bg-primary/90">
+                <Button type="submit" size="icon" aria-label="Send message" className="shrink-0 bg-primary hover:bg-primary/90">
                   <Send className="h-4 w-4" />
                 </Button>
               </form>

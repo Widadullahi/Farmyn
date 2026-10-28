@@ -58,6 +58,21 @@ test('only the listing owner can edit validated details without replacing the ph
 });
 test('unowned orders and undelivered products cannot be updated or reviewed', async t => { const f = await fixture(t); assert.equal((await f.request('/api/orders/private/advance', {})).status, 404); assert.equal((await f.request('/api/reviews', { productId: 'private', rating: 5, comment: 'Good product' })).status, 403); });
 test('messages are written atomically for sender and receiver with server-owned identities', async t => { const f = await fixture(t); await f.store.put({ pk: 'PROFILE', sk: 'seller-a', data: { ...owner, id: 'seller-a', role: 'seller', name: 'Test Seller' } }); const r = await f.request('/api/messages', { receiverId: 'seller-a', message: '<b>Hello</b>' }); assert.equal(r.status, 201); const mine = await f.store.list(`MESSAGES#${owner.id}`), theirs = await f.store.list('MESSAGES#seller-a'); assert.equal(mine.length, 1); assert.deepEqual(mine[0].data, theirs[0].data); assert.equal(mine[0].data.senderId, owner.id); assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Hi', senderId: 'forged' })).status, 400); });
+test('product enquiries identify the listing in both inboxes and reject unrelated listings', async t => {
+  const f = await fixture(t);
+  await f.store.put({ pk: 'PROFILE', sk: 'seller-a', data: { ...owner, id: 'seller-a', role: 'seller', name: 'Test Seller' } });
+  await f.store.put({ pk: 'PRODUCT', sk: 'tomatoes', data: { id: 'tomatoes', sellerId: 'seller-a', name: 'Fresh Tomatoes' } });
+  await f.store.put({ pk: 'PRODUCT', sk: 'other', data: { id: 'other', sellerId: 'another-seller', name: 'Other Product' } });
+  assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Is this available?', productId: 'other' })).status, 400);
+  assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Is this available?', productId: 'missing' })).status, 400);
+  assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Is this available?', productId: 'tomatoes', productName: 'Forged' })).status, 400);
+  assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Is this available?', productId: 'tomatoes' })).status, 201);
+  const mine = (await f.store.list(`MESSAGES#${owner.id}`))[0].data;
+  const theirs = (await f.store.list('MESSAGES#seller-a'))[0].data;
+  assert.deepEqual(mine, theirs);
+  assert.equal(mine.productId, 'tomatoes');
+  assert.equal(mine.productName, 'Fresh Tomatoes');
+});
 test('signed webhook is mandatory, and live payments remain blocked', async t => { const f = await fixture(t); assert.equal((await f.request('/api/paystack/webhook', {})).status, 401); const live = new Payments(f.store, 'sk_live_disallowed', 'https://farmyn.example'); assert.throws(() => live.requireKey(), /not available/); });
 test('payment records belong to authenticated buyers; arbitrary references reveal nothing', async t => { const f = await fixture(t); await f.store.put({ pk: 'PAYMENT', sk: `farmyn_${'b'.repeat(32)}`, data: { buyerId: 'another-buyer' } }); assert.equal((await f.request(`/api/paystack/verify/farmyn_${'b'.repeat(32)}`)).status, 404); });
 test('schema rejects forged prices, role escalation, remote image URLs, invalid money and quantities', () => {

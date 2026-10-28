@@ -57,7 +57,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           </span>
         </div>
         <h3 className="text-sm font-semibold leading-snug text-card-foreground">{product.name}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{product.sellerName}</p>
+        <Link href={`/store/${encodeURIComponent(product.sellerId)}`} className="mt-1 inline-block text-xs text-muted-foreground hover:text-primary hover:underline">{product.sellerName}</Link>
         <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {product.description}
         </p>
@@ -69,12 +69,12 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             </p>
           </div>
           <div className="flex gap-1.5">
-            <Link href={`/chat?user=${product.sellerId}`}>
+            <Link href={`/chat?user=${encodeURIComponent(product.sellerId)}&product=${encodeURIComponent(product.id)}`} aria-label={`Enquire about ${product.name} with ${product.sellerName}`}>
               <Button
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 hover:bg-accent/40"
-                title="Message Seller"
+                title={`Enquire about ${product.name}`}
               >
                 <MessageSquare className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
               </Button>

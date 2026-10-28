@@ -125,9 +125,15 @@ function createApp(config = {}, dependencies = {}) {
     await store.transact([{ Put: { Item: { pk: 'PROFILE', sk: data.id, data }, ConditionExpression: 'attribute_not_exists(#d.authVersion) OR #d.authVersion = :version', ExpressionAttributeNames: { '#d': 'data' }, ExpressionAttributeValues: { ':version': req.user.authVersion || 0 } } }, { Put: { Item: { pk: 'SELLER', sk: data.id, data: publicUser(data) } } }]); res.json({ message: 'Profile updated.' });
   }));
   app.post('/api/messages', auth(), wrap(async (req, res) => {
-    await throttle(req, 'message', 60); const v = z.object({ receiverId: text(1, 100), message: text(1, 3000) }).strict().parse(req.body);
+    await throttle(req, 'message', 60); const v = z.object({ receiverId: text(1, 100), message: text(1, 3000), productId: text(1, 100).optional() }).strict().parse(req.body);
     const receiver = (await store.get('PROFILE', v.receiverId))?.data; if (!receiver || receiver.id === req.user.id) throw error(400, 'Choose another account to message.');
-    const data = { id: crypto.randomUUID(), senderId: req.user.id, senderName: req.user.storeName || req.user.name, receiverId: receiver.id, receiverName: receiver.storeName || receiver.name, message: v.message, createdAt: new Date().toISOString() };
+    let listing;
+    if (v.productId) {
+      listing = (await store.get('PRODUCT', v.productId))?.data;
+      const sellerId = req.user.role === 'seller' ? req.user.id : receiver.id;
+      if (!listing || listing.sellerId !== sellerId || !['buyer', 'seller'].includes(req.user.role) || req.user.role === receiver.role) throw error(400, 'This product is not available for this conversation.');
+    }
+    const data = { id: crypto.randomUUID(), senderId: req.user.id, senderName: req.user.storeName || req.user.name, receiverId: receiver.id, receiverName: receiver.storeName || receiver.name, message: v.message, ...(listing ? { productId: listing.id, productName: listing.name } : {}), createdAt: new Date().toISOString() };
     await store.transact([req.user.id, receiver.id].map(id => ({ Put: { Item: { pk: `MESSAGES#${id}`, sk: `${data.createdAt}#${data.id}`, data } } }))); res.status(201).json({ message: 'Message sent.' });
   }));
   app.post('/api/bulk', auth('buyer'), wrap(async (req, res) => { await throttle(req, 'bulk', 10); const v = bulk.parse(req.body), data = { ...v, id: crypto.randomUUID(), buyerId: req.user.id, buyerName: req.user.name, status: 'Open', createdAt: new Date().toISOString() }; await store.put({ pk: 'BULK', sk: data.id, data }); res.status(201).json({ message: 'Bulk request published.' }); }));

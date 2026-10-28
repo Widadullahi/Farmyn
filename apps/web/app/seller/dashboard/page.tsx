@@ -564,6 +564,11 @@ export default function SellerDashboardPage() {
                                 ? "bg-primary text-primary-foreground rounded-tr-none"
                                 : "bg-card border border-border text-foreground rounded-tl-none"
                             }`}>
+                              {msg.productId && (
+                                <p className={`mb-1 text-[11px] font-semibold ${isMe ? "text-primary-foreground" : "text-primary"}`}>
+                                  Enquiry: {msg.productName || products.find((product) => product.id === msg.productId)?.name || "Product"}
+                                </p>
+                              )}
                               <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                               <span className="block text-[8px] mt-1 text-right opacity-60">
                                 {formatDate(msg.createdAt)}

@@ -24,7 +24,7 @@ interface AppContextValue extends AppState {
   addReview: (id: string, rating: number, comment: string) => Promise<Result>;
   createBulkRequest: (input: Omit<BulkRequest, "id" | "buyerId" | "buyerName" | "status" | "createdAt">) => Promise<Result>;
   createAdRequest: (type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing", title: string, budget: number) => Promise<Result>;
-  sendChatMessage: (id: string, message: string) => Promise<Result>;
+  sendChatMessage: (id: string, message: string, productId?: string) => Promise<Result>;
 }
 const CART_KEY = "farmyn-cart-v2";
 const AppContext = createContext<AppContextValue | null>(null);
@@ -90,7 +90,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), uploadPhoto: file => api("/uploads", file), updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
     advanceOrderStatus: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}), markOrderCompleted: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}),
     addReview: (productId, rating, comment) => mutate("/reviews", { productId, rating, comment }), createBulkRequest: input => mutate("/bulk", input),
-    createAdRequest: (type, title, budget) => mutate("/ads", { type, title, budget }), sendChatMessage: (receiverId, message) => mutate("/messages", { receiverId, message })
+    createAdRequest: (type, title, budget) => mutate("/ads", { type, title, budget }), sendChatMessage: (receiverId, message, productId) => mutate("/messages", { receiverId, message, ...(productId ? { productId } : {}) })
   }}>
     {serviceError && <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">{serviceError}</div>}
     {children}
