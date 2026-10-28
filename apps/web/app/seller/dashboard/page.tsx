@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import DashboardOverview from "@/components/DashboardOverview";
-import { ArrowUpRight, Megaphone, Menu, Package, PanelLeftOpen, PiggyBank, Plus, ShieldCheck, ShoppingCart, TrendingUp, MessageSquare, MapPin, User, Send, X } from "lucide-react";
+import { ArrowUpRight, Megaphone, Menu, Package, PanelLeftOpen, Pencil, PiggyBank, Plus, ShieldCheck, ShoppingCart, TrendingUp, MessageSquare, MapPin, User, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApp } from "@/context/AppContext";
-import { formatDate, formatNaira, marketplaceCategories } from "@/lib/app-data";
+import { formatDate, formatNaira, marketplaceCategories, Product } from "@/lib/app-data";
 
 export default function SellerDashboardPage() {
   const {
@@ -24,6 +24,7 @@ export default function SellerDashboardPage() {
     chatMessages,
     users,
     addProduct,
+    updateProduct,
     uploadPhoto,
     updateSellerProfile,
     advanceOrderStatus,
@@ -91,6 +92,8 @@ export default function SellerDashboardPage() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoPreview, setPhotoPreview] = useState("");
   const [description, setDescription] = useState("");
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const productFormRef = useRef<HTMLDivElement>(null);
 
   // Ads form state
   const [adType, setAdType] = useState<"Homepage Banner" | "Sidebar Ad" | "Featured Listing">("Featured Listing");
@@ -142,19 +145,46 @@ export default function SellerDashboardPage() {
     });
   };
 
-  const handleAddProduct = async () => {
-    if (photoBusy || !image) { toast.error("Upload a product photo first."); return; }
-    const result = await addProduct({
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setProductName("");
+    setCategory(marketplaceCategories[0]);
+    setPrice("0");
+    setStockCount("0");
+    setUnit("basket");
+    setMinimumOrder("1 basket");
+    setImage("");
+    setPhotoPreview("");
+    setDescription("");
+  };
+  const startEditingProduct = (item: Product) => {
+    setEditingProductId(item.id);
+    setProductName(item.name);
+    setCategory(item.category as typeof category);
+    setPrice(String(item.price));
+    setStockCount(String(item.stockCount));
+    setUnit(item.unit);
+    setMinimumOrder(item.minimumOrder);
+    setImage("");
+    setPhotoPreview(item.image);
+    setDescription(item.description);
+    requestAnimationFrame(() => productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const handleSaveProduct = async () => {
+    if (photoBusy) return;
+    if (!editingProductId && !image) { toast.error("Upload a product photo first."); return; }
+    const input = {
       name: productName,
       category,
       price: Number(price),
       stockCount: Number(stockCount),
       unit,
       minimumOrder,
-      image,
-      location,
+      ...(image ? { image } : {}),
+      location: sellerProducts.find(item => item.id === editingProductId)?.location || location,
       description,
-    });
+    };
+    const result = editingProductId ? await updateProduct(editingProductId, input) : await addProduct({ ...input, image });
 
     if (!result.ok) {
       toast.error(result.message);
@@ -162,12 +192,7 @@ export default function SellerDashboardPage() {
     }
 
     toast.success(result.message);
-    setProductName("");
-    setPrice("0");
-    setStockCount("0");
-    setUnit("basket");
-    setMinimumOrder("1 basket");
-    setDescription("");
+    resetProductForm();
   };
 
   const handleAdRequest = async () => {
@@ -327,9 +352,9 @@ export default function SellerDashboardPage() {
           {activeTab === "inventory" && (
             <div className="grid gap-6 lg:grid-cols-12">
               {/* Product Listing Form */}
-              <div className="lg:col-span-5 rounded-md border border-border bg-card p-6 shadow-sm self-start">
-                <h2 className="text-lg font-bold text-foreground">Add New Product</h2>
-                <p className="text-xs text-muted-foreground mt-1">List produce, poultry, grains, or ingredients directly to the marketplace.</p>
+              <div ref={productFormRef} className="lg:col-span-5 scroll-mt-24 rounded-md border border-border bg-card p-6 shadow-sm self-start">
+                <h2 className="text-lg font-bold text-foreground">{editingProductId ? "Edit listing" : "Add New Product"}</h2>
+                <p className="text-xs text-muted-foreground mt-1">{editingProductId ? "Update your listing details and stock. Choose a new photo only if you want to replace it." : "List produce, poultry, grains, or ingredients directly to the marketplace."}</p>
                 <div className="mt-5 grid gap-3 text-sm">
                   <div className="space-y-1.5"><label htmlFor="product-name" className="text-xs font-semibold text-foreground">Product name</label><Input id="product-name" placeholder="e.g. Fresh tomatoes" value={productName} onChange={(event) => setProductName(event.target.value)} /></div>
                   <div className="space-y-1.5"><label htmlFor="product-category" className="text-xs font-semibold text-foreground">Product type</label><select id="product-category" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value as typeof category)}>
@@ -345,11 +370,11 @@ export default function SellerDashboardPage() {
                     <div className="space-y-1.5"><label htmlFor="product-unit" className="text-xs font-semibold text-foreground">Unit</label><Input id="product-unit" placeholder="e.g. basket" value={unit} onChange={(event) => setUnit(event.target.value)} /></div>
                     <div className="space-y-1.5"><label htmlFor="product-minimum" className="text-xs font-semibold text-foreground">Minimum order</label><Input id="product-minimum" placeholder="e.g. 1 basket" value={minimumOrder} onChange={(event) => setMinimumOrder(event.target.value)} /></div>
                   </div>
-                  <div className="space-y-2"><label htmlFor="product-photo" className="text-sm font-medium">Product photo</label><Input id="product-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={photoBusy} onChange={async event => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast.error("Choose a photo under 3 MB."); return; } setPhotoBusy(true); try { const result = await uploadPhoto(file); setImage(result.image); setPhotoPreview(result.preview); } catch(e) { toast.error(e instanceof Error ? e.message : "Upload failed."); } finally { setPhotoBusy(false); } }} /><p className="text-xs text-muted-foreground">JPEG, PNG or WebP, up to 3 MB. {photoBusy ? "Uploading…" : image ? "Photo uploaded." : "Choose a clear photo of your produce."}</p>{photoPreview && <img src={photoPreview} alt="Product photo preview" className="h-24 w-24 rounded-lg object-cover" />}</div>
+                  <div className="space-y-2"><label htmlFor="product-photo" className="text-sm font-medium">{editingProductId ? "Replace product photo (optional)" : "Product photo"}</label><Input key={editingProductId || "new"} id="product-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={photoBusy} onChange={async event => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { toast.error("Choose a photo under 3 MB."); return; } setPhotoBusy(true); try { const result = await uploadPhoto(file); setImage(result.image); setPhotoPreview(result.preview); } catch(e) { toast.error(e instanceof Error ? e.message : "Upload failed."); } finally { setPhotoBusy(false); } }} /><p className="text-xs text-muted-foreground">JPEG, PNG or WebP, up to 3 MB. {photoBusy ? "Uploading…" : image ? "Photo uploaded." : editingProductId ? "Current photo will be kept." : "Choose a clear photo of your produce."}</p>{photoPreview && <img src={photoPreview} alt="Product photo preview" className="h-24 w-24 rounded-lg object-cover" />}</div>
                   <div className="space-y-1.5"><label htmlFor="product-description" className="text-xs font-semibold text-foreground">Description</label><Textarea id="product-description" placeholder="Describe freshness, size, and harvest details" value={description} onChange={(event) => setDescription(event.target.value)} /></div>
-                  <Button className="mt-2 gap-2 bg-primary hover:bg-primary/90" onClick={handleAddProduct}>
-                    <Plus className="h-4 w-4" /> Add Product
-                  </Button>
+                  <div className="mt-2 flex flex-wrap gap-2"><Button className="gap-2 bg-primary hover:bg-primary/90" disabled={photoBusy} onClick={handleSaveProduct}>
+                    {editingProductId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}{editingProductId ? "Save changes" : "Add Product"}
+                  </Button>{editingProductId && <Button variant="outline" onClick={resetProductForm}>Cancel</Button>}</div>
                 </div>
               </div>
 
@@ -371,8 +396,8 @@ export default function SellerDashboardPage() {
                     </div>
                   ) : (
                     sellerProducts.map((product) => (
-                      <div key={product.id} className="rounded-md border border-border p-4 flex items-center justify-between gap-4 bg-muted/10 hover:bg-muted/20 transition-colors">
-                        <div className="flex items-center gap-3">
+                      <div key={product.id} className="rounded-md border border-border p-4 flex flex-wrap items-center justify-between gap-4 bg-muted/10 hover:bg-muted/20 transition-colors">
+                        <div className="flex min-w-0 items-center gap-3">
                           <img src={product.image} alt={product.name} className="h-12 w-12 rounded-lg object-cover bg-muted" />
                           <div>
                             <h4 className="font-bold text-foreground text-sm">{product.name}</h4>
@@ -381,9 +406,10 @@ export default function SellerDashboardPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <p className="font-bold text-primary text-sm">{formatNaira(product.price)}</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5">Min: {product.minimumOrder}</p>
+                          <Button type="button" variant="outline" size="sm" className="mt-2 h-8 gap-1.5 text-xs" onClick={() => startEditingProduct(product)}><Pencil className="h-3 w-3" /> Edit</Button>
                         </div>
                       </div>
                     ))

@@ -1,7 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const crypto = require('node:crypto');
-const { z, text, registration, product, checkout, bulk } = require('./validation');
+const { z, text, registration, product, productUpdate, checkout, bulk } = require('./validation');
 const { Payments, error, hash } = require('./payments');
 const { Store } = require('./store');
 const { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GetUserCommand, ForgotPasswordCommand, ConfirmForgotPasswordCommand, ResendConfirmationCodeCommand } = require('@aws-sdk/client-cognito-identity-provider');
@@ -97,6 +97,27 @@ function createApp(config = {}, dependencies = {}) {
     const photo = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: v.image })); if (photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg') throw error(400, 'Upload a valid product photo first.');
     const data = { ...v, id: crypto.randomUUID(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
     await store.put({ pk: 'PRODUCT', sk: data.id, data }, 'attribute_not_exists(pk)'); res.status(201).json({ message: 'Product published.' });
+  }));
+  app.patch('/api/products/:id', auth('seller'), wrap(async (req, res) => {
+    await throttle(req, 'product', 20);
+    const id = text(1, 100).parse(req.params.id);
+    const record = await store.get('PRODUCT', id);
+    if (!record || record.data.sellerId !== req.user.id) throw error(404, 'Listing not found.');
+    const v = productUpdate.parse(req.body);
+    if (v.image) {
+      if (!v.image.startsWith(`products/${req.user.id}/`)) throw error(403, 'Upload a photo from your own account.');
+      const photo = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: v.image }));
+      if (photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg') throw error(400, 'Upload a valid product photo first.');
+    }
+    const previous = record.data;
+    const data = { ...previous, ...v, image: v.image || previous.image, inStock: v.stockCount > 0, version: (previous.version || 0) + 1 };
+    await store.transact([{ Put: {
+      Item: { pk: 'PRODUCT', sk: id, data },
+      ConditionExpression: '#d.sellerId = :seller AND #d.stockCount = :stock AND #d.price = :price AND ' + (previous.version === undefined ? 'attribute_not_exists(#d.version)' : '#d.version = :version'),
+      ExpressionAttributeNames: { '#d': 'data' },
+      ExpressionAttributeValues: { ':seller': req.user.id, ':stock': previous.stockCount, ':price': previous.price, ...(previous.version === undefined ? {} : { ':version': previous.version }) },
+    } }]);
+    res.json({ message: 'Listing updated.' });
   }));
   app.patch('/api/profile', auth('seller'), wrap(async (req, res) => {
     const patch = z.object({ storeName: text(2, 100), location: text(2, 100), bio: z.string().trim().max(2000) }).strict().parse(req.body), data = { ...req.user, ...patch };

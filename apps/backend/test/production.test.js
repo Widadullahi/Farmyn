@@ -35,6 +35,23 @@ test('Cognito registration sends a code, never returns a password or a fake code
 test('Cognito login returns a random HttpOnly Secure cookie; token is stored only as a hash', async t => { const f = await fixture(t); const r = await f.request('/api/auth/login', { email: owner.email, password: 'ValidPassword123!' }); assert.equal(r.status, 200); const cookie = r.headers.get('set-cookie'); assert.match(cookie, /HttpOnly/); assert.match(cookie, /Secure/); assert.match(cookie, /SameSite=Lax/); const value = cookie.match(/farmyn_session=([a-f0-9]{64})/)[1]; assert.notEqual(value, token); assert.ok(await f.store.get('SESSION', hash(value))); assert.equal(JSON.stringify(await f.store.list('SESSION')).includes(value), false); const data = await r.json(); assert.equal(data.user.password, undefined); });
 test('logout revokes the server session and expires its cookie', async t => { const f = await fixture(t); const r = await f.request('/api/auth/logout', {}); assert.equal(r.status, 200); assert.equal(await f.store.get('SESSION', hash(token)), undefined); assert.match(r.headers.get('set-cookie'), /Max-Age=0/); });
 test('buyer cannot publish products, patch seller identity, or request ads', async t => { const f = await fixture(t); assert.equal((await f.request('/api/products', {})).status, 403); assert.equal((await f.request('/api/profile', {}, { method: 'PATCH' })).status, 403); assert.equal((await f.request('/api/ads', {})).status, 403); });
+test('only the listing owner can edit validated details without replacing the photo', async t => {
+  const f = await fixture(t);
+  const path = '/api/products/listing-a';
+  const input = { name: 'Fresh red tomatoes', category: 'Vegetables', price: 2400, stockCount: 0, unit: 'basket', minimumOrder: '1 basket', location: 'Lagos', description: 'Fresh tomatoes from our farm.' };
+  await f.store.put({ pk: 'PRODUCT', sk: 'listing-a', data: { ...input, id: 'listing-a', sellerId: owner.id, sellerName: 'Test Farm', image: `products/${owner.id}/photo.jpg`, stockCount: 4, inStock: true } });
+  assert.equal((await f.request(path, input, { method: 'PATCH' })).status, 403);
+  await f.store.put({ pk: 'PROFILE', sk: owner.id, data: { ...owner, role: 'seller' } });
+  assert.equal((await f.request(path, { ...input, sellerId: 'forged' }, { method: 'PATCH' })).status, 400);
+  assert.equal((await f.request(path, { ...input, price: -1 }, { method: 'PATCH' })).status, 400);
+  assert.equal((await f.request('/api/products/someone-elses-listing', input, { method: 'PATCH' })).status, 404);
+  assert.equal((await f.request(path, input, { method: 'PATCH' })).status, 200);
+  const updated = (await f.store.get('PRODUCT', 'listing-a')).data;
+  assert.equal(updated.image, `products/${owner.id}/photo.jpg`);
+  assert.equal(updated.stockCount, 0);
+  assert.equal(updated.inStock, false);
+  assert.equal(updated.version, 1);
+});
 test('unowned orders and undelivered products cannot be updated or reviewed', async t => { const f = await fixture(t); assert.equal((await f.request('/api/orders/private/advance', {})).status, 404); assert.equal((await f.request('/api/reviews', { productId: 'private', rating: 5, comment: 'Good product' })).status, 403); });
 test('messages are written atomically for sender and receiver with server-owned identities', async t => { const f = await fixture(t); await f.store.put({ pk: 'PROFILE', sk: 'seller-a', data: { ...owner, id: 'seller-a', role: 'seller', name: 'Test Seller' } }); const r = await f.request('/api/messages', { receiverId: 'seller-a', message: '<b>Hello</b>' }); assert.equal(r.status, 201); const mine = await f.store.list(`MESSAGES#${owner.id}`), theirs = await f.store.list('MESSAGES#seller-a'); assert.equal(mine.length, 1); assert.deepEqual(mine[0].data, theirs[0].data); assert.equal(mine[0].data.senderId, owner.id); assert.equal((await f.request('/api/messages', { receiverId: 'seller-a', message: 'Hi', senderId: 'forged' })).status, 400); });
 test('signed webhook is mandatory, and live payments remain blocked', async t => { const f = await fixture(t); assert.equal((await f.request('/api/paystack/webhook', {})).status, 401); const live = new Payments(f.store, 'sk_live_disallowed', 'https://farmyn.example'); assert.throws(() => live.requireKey(), /not available/); });

@@ -17,6 +17,7 @@ interface AppContextValue extends AppState {
   checkout: (input: { deliveryAddress: string; note?: string }) => Promise<Result>;
   confirmPayment: (reference: string) => Promise<Result>;
   addProduct: (input: ProductInput) => Promise<Result>;
+  updateProduct: (id: string, input: Omit<ProductInput, "image"> & { image?: string }) => Promise<Result>;
   uploadPhoto: (file: File) => Promise<{ image: string; preview: string }>;
   updateSellerProfile: (patch: Partial<User>) => Promise<void>;
   advanceOrderStatus: (id: string) => Promise<void>; markOrderCompleted: (id: string) => Promise<void>;
@@ -86,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     registerUser: input => mutate("/auth/register", input), confirmRegistration: (email, code) => mutate("/auth/confirm", { email, code }), login: (email, password) => mutate("/auth/login", { email, password }),
     logout: async () => { const r = await mutate("/auth/logout", {}); if (!r.ok) toast.error(r.message); else sessionStorage.removeItem("farmyn-checkout-key-v2"); },
     addToCart, updateCartQuantity, removeFromCart: id => updateCartQuantity(id, 0), clearCart: () => setState(p => ({ ...p, cart: [] })), checkout, confirmPayment,
-    addProduct: input => mutate("/products", input), uploadPhoto: file => api("/uploads", file), updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
+    addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), uploadPhoto: file => api("/uploads", file), updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
     advanceOrderStatus: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}), markOrderCompleted: id => notify(`/orders/${encodeURIComponent(id)}/advance`, {}),
     addReview: (productId, rating, comment) => mutate("/reviews", { productId, rating, comment }), createBulkRequest: input => mutate("/bulk", input),
     createAdRequest: (type, title, budget) => mutate("/ads", { type, title, budget }), sendChatMessage: (receiverId, message) => mutate("/messages", { receiverId, message })
