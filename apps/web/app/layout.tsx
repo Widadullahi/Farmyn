@@ -4,15 +4,15 @@ import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "Farmyn Nigeria — Fresh Farm Produce, Pay with Paystack",
+    default: "Farmyn Nigeria — Farm Product Listings",
     template: "%s | Farmyn Nigeria",
   },
   description:
-    "Buy fresh produce, poultry, livestock and grains directly from Nigerian farmers. Pay through Paystack and track your order from confirmation to delivery.",
-  keywords: ["Nigeria", "farm produce", "marketplace", "payments", "Paystack", "agriculture"],
+    "Browse farm product listings across Nigeria and chat directly with local sellers.",
+  keywords: ["Nigeria", "farm produce", "marketplace", "listings", "farmers", "agriculture"],
   openGraph: {
-    title: "Farmyn Nigeria — Fresh Farm Produce, Pay with Paystack",
-    description: "Direct farm trade with Paystack checkout and order tracking.",
+    title: "Farmyn Nigeria — Farm Product Listings",
+    description: "Browse farm products and chat directly with sellers.",
     type: "website",
   },
   icons: { icon: "/farmyn-icon.svg" },

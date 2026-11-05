@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "node --watch index.js",
     "start": "node index.js",
-    "test": "node --test test/*.test.js",
-    "test:sandbox": "node --test test/paystack.test.js"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1156.0",

@@ -11,7 +11,7 @@ import { useApp } from "@/context/AppContext";
 
 export default function SellerStorePage() {
   const { sellerId } = useParams<{ sellerId: string }>();
-  const { users, products, isHydrated, addToCart } = useApp();
+  const { users, products, isHydrated } = useApp();
   const seller = users.find((user) => user.id === sellerId && user.role === "seller");
   const listings = products.filter((product) => product.sellerId === sellerId);
 
@@ -50,7 +50,7 @@ export default function SellerStorePage() {
               <p className="mt-1 text-sm text-muted-foreground">Choose a product and use its message button to ask the farmer about it.</p>
               {listings.length ? (
                 <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {listings.map((product) => <ProductCard key={product.id} product={product} onAddToCart={addToCart} />)}
+                  {listings.map((product) => <ProductCard key={product.id} product={product} />)}
                 </div>
               ) : <p className="mt-5 rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">No products listed yet.</p>}
             </section>

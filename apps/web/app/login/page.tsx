@@ -34,7 +34,7 @@ export default function LoginPage() {
     const next = sessionStorage.getItem("farmyn-return-to");
     sessionStorage.removeItem("farmyn-return-to");
     setPassword("");
-    router.push(next?.startsWith("/checkout/complete?") || next?.startsWith("/chat?user=") ? next : result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
+    router.push(next?.startsWith("/chat?user=") ? next : result.user?.role === "seller" ? "/seller/dashboard" : "/dashboard");
   };
 
   return (
@@ -93,7 +93,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-foreground/20" />
         <div className="absolute bottom-12 left-12 right-12 rounded-3xl bg-background/10 p-6 backdrop-blur">
           <blockquote className="text-lg font-medium leading-relaxed text-primary-foreground">
-            "Farmyn helps trusted sellers reach more buyers while giving customers a safer way to order farm products online."
+            "Farmyn helps sellers reach more buyers and gives customers a direct way to ask about farm product listings."
           </blockquote>
           <div className="mt-4">
             <p className="text-sm font-semibold text-primary-foreground">Farmyn</p>

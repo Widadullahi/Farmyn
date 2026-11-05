@@ -26,8 +26,7 @@ const Footer = () => {
               <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">Marketplace</h4>
               <ul className="space-y-2.5 text-sm">
                 <li><Link href="/marketplace" className="text-primary-foreground/70 transition-colors hover:text-secondary">Browse All</Link></li>
-                <li><Link href="/bulk" className="text-primary-foreground/70 transition-colors hover:text-secondary">Bulk Orders</Link></li>
-                <li><Link href="/cart" className="text-primary-foreground/70 transition-colors hover:text-secondary">Cart</Link></li>
+                <li><Link href="/chat" className="text-primary-foreground/70 transition-colors hover:text-secondary">Messages</Link></li>
               </ul>
             </div>
             <div>
@@ -39,10 +38,10 @@ const Footer = () => {
               </ul>
             </div>
             <div>
-              <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">Secure Payments</h4>
+              <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">Connect</h4>
               <ul className="space-y-2.5 text-sm">
-                <li><Link href="/cart" className="text-primary-foreground/70 transition-colors hover:text-secondary">Paystack Checkout</Link></li>
-                <li><Link href="/cart" className="text-primary-foreground/70 transition-colors hover:text-secondary">Track Orders</Link></li>
+                <li><Link href="/chat" className="text-primary-foreground/70 transition-colors hover:text-secondary">Chat with Sellers</Link></li>
+                <li><Link href="/marketplace" className="text-primary-foreground/70 transition-colors hover:text-secondary">Browse Listings</Link></li>
                 <li><Link href="/about" className="text-primary-foreground/70 transition-colors hover:text-secondary">Trust & Safety</Link></li>
               </ul>
             </div>

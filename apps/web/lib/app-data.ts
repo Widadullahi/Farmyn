@@ -25,93 +25,12 @@ export interface Product {
   sellerName: string;
   sellerVerified: boolean;
   location: string;
-  rating: number;
-  reviewCount: number;
   inStock: boolean;
   stockCount: number;
   unit: string;
   minimumOrder: string;
   description: string;
   featured: boolean;
-}
-
-export interface CartItem {
-  productId: string;
-  quantity: number;
-}
-
-export interface OrderItem {
-  productId: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  sellerId: string;
-  sellerName: string;
-}
-
-export interface OrderEvent {
-  label: string;
-  date: string;
-}
-
-export interface Order {
-  id: string;
-  buyerId: string;
-  buyerName: string;
-  sellerId: string;
-  sellerName: string;
-  items: OrderItem[];
-  subtotal: number;
-  commission: number;
-  deliveryFee: number;
-  total: number;
-  deliveryAddress: string;
-  note?: string;
-  status:
-    | "Pending Seller Confirmation"
-    | "Preparing Order"
-    | "In Transit"
-    | "Delivered"
-    | "Completed";
-  paymentStatus: "Awaiting Payment" | "Paid" | "Unverified";
-  paymentReference?: string;
-  createdAt: string;
-  timeline: OrderEvent[];
-}
-
-export interface Review {
-  id: string;
-  productId: string;
-  buyerId: string;
-  buyerName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-}
-
-export interface BulkRequest {
-  id: string;
-  buyerId: string;
-  buyerName: string;
-  title: string;
-  category: string;
-  quantity: string;
-  budget: number;
-  location: string;
-  notes: string;
-  status: "Open" | "Reviewing Offers" | "Closed";
-  createdAt: string;
-}
-
-export interface AdRequest {
-  id: string;
-  sellerId: string;
-  sellerName: string;
-  type: "Homepage Banner" | "Sidebar Ad" | "Featured Listing";
-  title: string;
-  budget: number;
-  status: "Pending Approval" | "Approved" | "Rejected";
-  createdAt: string;
 }
 
 export interface ChatMessage {
@@ -126,15 +45,27 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  ctaLabel: string;
+  ctaHref: string;
+  placement: "homepage" | "category";
+  startsAt: string;
+  endsAt: string;
+  price: number;
+  sponsorName: string;
+  status: "active";
+  createdAt: string;
+}
+
 export interface AppState {
   users: User[];
   currentUserId: string | null;
   products: Product[];
-  cart: CartItem[];
-  orders: Order[];
-  reviews: Review[];
-  bulkRequests: BulkRequest[];
-  adRequests: AdRequest[];
+  banners: Banner[];
   chatMessages: ChatMessage[];
 }
 
@@ -151,15 +82,7 @@ export const allCategories = [
 
 export const marketplaceCategories = allCategories.filter((category) => category !== "All");
 
-export const initialAppState: AppState = { users: [], currentUserId: null, products: [], cart: [], orders: [], reviews: [], bulkRequests: [], adRequests: [], chatMessages: [] };
-
-export const orderStatusFlow: Order["status"][] = [
-  "Pending Seller Confirmation",
-  "Preparing Order",
-  "In Transit",
-  "Delivered",
-  "Completed",
-];
+export const initialAppState: AppState = { users: [], currentUserId: null, products: [], banners: [], chatMessages: [] };
 
 export const formatNaira = (value: number) =>
   new Intl.NumberFormat("en-NG", {

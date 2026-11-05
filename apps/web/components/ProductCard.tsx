@@ -1,16 +1,11 @@
 "use client";
-import { MapPin, ShieldCheck, ShoppingCart, Star, MessageSquare } from "lucide-react";
+import { MapPin, ShieldCheck, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Product, formatNaira } from "@/lib/app-data";
 
-interface ProductCardProps {
-  product: Product;
-  onAddToCart?: (productId: string) => void;
-}
-
-const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+const ProductCard = ({ product }: { product: Product }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -36,6 +31,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               Verified Seller
             </span>
           )}
+          {product.featured && <span className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">Featured</span>}
         </div>
         {!product.inStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-foreground/50 backdrop-blur-sm">
@@ -47,10 +43,6 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
       </div>
       <div className="p-4">
         <div className="mb-1 flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <Star className="h-3 w-3 fill-secondary text-secondary" />
-            {product.reviewCount > 0 ? `${product.rating.toFixed(1)} (${product.reviewCount})` : "No reviews yet"}
-          </span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             {product.location}
@@ -69,25 +61,15 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             </p>
           </div>
           <div className="flex gap-1.5">
-            <Link href={`/chat?user=${encodeURIComponent(product.sellerId)}&product=${encodeURIComponent(product.id)}`} aria-label={`Enquire about ${product.name} with ${product.sellerName}`}>
+            <Link href={`/chat?user=${encodeURIComponent(product.sellerId)}&product=${encodeURIComponent(product.id)}`} aria-label={`Chat with ${product.sellerName} about ${product.name}`}>
               <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 hover:bg-accent/40"
-                title={`Enquire about ${product.name}`}
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                title={`Chat about ${product.name}`}
               >
-                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+                <MessageSquare className="h-3.5 w-3.5" /> Chat
               </Button>
             </Link>
-            <Button
-              size="sm"
-              disabled={!product.inStock}
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => onAddToCart?.(product.id)}
-            >
-              <ShoppingCart className="h-3 w-3" />
-              Add
-            </Button>
           </div>
         </div>
       </div>

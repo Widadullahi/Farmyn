@@ -6,12 +6,17 @@ Parameters:
     Type: String
     AllowedPattern: 'https://[a-zA-Z0-9.-]+'
     Description: Exact HTTPS frontend origin, without a trailing slash.
-  PaystackSecretArn:
-    Type: String
-    Description: ARN of a Secrets Manager JSON secret containing PAYSTACK_SECRET_KEY (test key for acceptance).
   AlertEmail:
     Type: String
     Description: Operations email that will confirm the SNS alert subscription.
+  AdminEmail:
+    Type: String
+    Default: alagbewidad814@gmail.com
+    Description: Email allowed to sign in to the Farmyn super-admin console.
+  AdminPasswordHash:
+    Type: String
+    NoEcho: true
+    Description: Scrypt salt:hash value for the super-admin password.
 Resources:
   Data:
     Type: AWS::DynamoDB::Table
@@ -148,7 +153,8 @@ Resources:
           DYNAMODB_TABLE: !Ref Data
           COGNITO_CLIENT_ID: !Ref AccountClient
           PRODUCT_PHOTOS_BUCKET: !Ref Photos
-          PAYSTACK_SECRET_ARN: !Ref PaystackSecretArn
+          ADMIN_EMAIL: !Ref AdminEmail
+          ADMIN_PASSWORD_HASH: !Ref AdminPasswordHash
       Policies:
         - Statement:
             - Effect: Allow
@@ -157,9 +163,6 @@ Resources:
             - Effect: Allow
               Action: [s3:GetObject, s3:PutObject]
               Resource: !Sub '${Photos.Arn}/products/*'
-            - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Ref PaystackSecretArn
       Events:
         All:
           Type: HttpApi
@@ -178,28 +181,6 @@ Resources:
       Subscription:
         - Endpoint: !Ref AlertEmail
           Protocol: email
-  PaymentReviewMetric:
-    Type: AWS::Logs::MetricFilter
-    Properties:
-      LogGroupName: !Ref Logs
-      FilterPattern: '"payment_review_required"'
-      MetricTransformations:
-        - MetricNamespace: Farmyn
-          MetricName: PaymentReview
-          MetricValue: '1'
-          DefaultValue: 0
-  PaymentReviewAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      Namespace: Farmyn
-      MetricName: PaymentReview
-      Statistic: Sum
-      Period: 60
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      TreatMissingData: notBreaching
-      AlarmActions: [!Ref Alerts]
   ErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:

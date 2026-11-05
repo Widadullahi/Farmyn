@@ -15,7 +15,7 @@ function MarketplaceContent() {
   const params = useSearchParams();
   const initialCategory = params.get("category");
   const initialSearch = params.get("search") || "";
-  const { products, categories, addToCart } = useApp();
+  const { products, categories, banners } = useApp();
   const [search, setSearch] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory || "All");
   const [location, setLocation] = useState("All");
@@ -52,6 +52,7 @@ function MarketplaceContent() {
       </div>
 
       <div className="container py-8">
+        {banners.find(item => item.placement === "category") && (() => { const banner = banners.find(item => item.placement === "category")!; return <a href={banner.ctaHref} className="relative mb-6 block overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground"><img src={banner.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" /><div className="relative"><span className="text-[10px] font-semibold uppercase tracking-widest opacity-70">Sponsored · {banner.sponsorName}</span><h2 className="mt-2 text-xl font-bold">{banner.title}</h2><p className="mt-1 max-w-xl text-sm opacity-80">{banner.subtitle}</p><span className="mt-4 inline-block rounded-md bg-white px-3 py-2 text-xs font-semibold text-foreground">{banner.ctaLabel}</span></div></a>; })()}
         <div className="grid gap-4 rounded-2xl border border-border bg-card p-4 shadow-card lg:grid-cols-[1.4fr,repeat(4,minmax(0,1fr))]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -133,7 +134,7 @@ function MarketplaceContent() {
         {filtered.length > 0 ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
+                <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

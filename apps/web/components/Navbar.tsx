@@ -5,21 +5,20 @@ import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 import { usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight, ChevronRight, Home, Info, LayoutDashboard, Leaf, LogOut, Menu, MessageSquare, ShoppingBag, ShoppingCart, Sprout, Store, X } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Home, Info, LayoutDashboard, Leaf, LogOut, Menu, MessageSquare, ShoppingBag, Store, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { currentUser, cartCount, logout } = useApp();
+  const { currentUser, logout } = useApp();
   const pathname = usePathname();
   const dashboard = currentUser?.role === "seller" ? "/seller/dashboard" : "/dashboard";
   const displayName = currentUser?.storeName || currentUser?.name || "";
   const links = [
     { label: "Home", href: "/", icon: Home, description: "Fresh finds and farm favourites" },
     { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, description: "Shop directly from local growers" },
-    { label: "Bulk orders", href: "/bulk", icon: Sprout, description: "Source more for your business" },
     { label: "About us", href: "/about", icon: Info, description: "Get to know Farmyn" },
     ...(currentUser ? [
       { label: "Messages", href: "/chat", icon: MessageSquare, description: "Connect with buyers and farmers" },
@@ -45,10 +44,7 @@ const Navbar = () => {
           {links.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} className={cn("rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors", pathname === link.href ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground")}>{link.label}</Link>)}
         </nav>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <Link href="/cart" aria-label={`Shopping cart${cartCount ? `, ${cartCount} item${cartCount === 1 ? "" : "s"}` : ", empty"}`} className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-primary/10 bg-card text-foreground transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-            <ShoppingCart className="h-[19px] w-[19px]" aria-hidden="true" />
-            {cartCount > 0 && <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[9px] font-bold text-white">{cartCount > 99 ? "99+" : cartCount}</span>}
-          </Link>
+          {currentUser && <Link href="/chat" aria-label="Open messages" className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-primary/10 bg-card text-foreground transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><MessageSquare className="h-[19px] w-[19px]" /></Link>}
           <div className="hidden items-center gap-2 xl:flex">
             {currentUser ? <><Link href={dashboard} className="flex h-10 items-center gap-2 rounded-lg bg-accent/70 px-3 text-xs font-medium text-primary"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[9px] text-white">{displayName.slice(0, 2).toUpperCase()}</span><span className="max-w-[100px] truncate">{displayName}</span></Link><Button variant="ghost" size="icon" aria-label="Log out" onClick={logout}><LogOut className="h-4 w-4" /></Button></> : <><Button asChild variant="ghost" size="sm"><Link href="/login">Log in</Link></Button><Button asChild className="rounded-lg text-xs"><Link href="/register">Get started <ArrowUpRight className="h-4 w-4" /></Link></Button></>}
           </div>
@@ -62,7 +58,7 @@ const Navbar = () => {
                   <Dialog.Close asChild><button aria-label="Close navigation menu" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><X className="h-5 w-5" /></button></Dialog.Close>
                 </div>
                 <Dialog.Title className="sr-only">Explore Farmyn</Dialog.Title>
-                <Dialog.Description className="sr-only">Browse the marketplace, place bulk orders, or manage your account.</Dialog.Description>
+                <Dialog.Description className="sr-only">Browse listings, message sellers, or manage your account.</Dialog.Description>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
                   <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Explore Farmyn</p>
                   <nav aria-label="Mobile navigation" className="space-y-1.5">{links.map(link => {

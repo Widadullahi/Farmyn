@@ -7,6 +7,4 @@ const productFields = z.object({ name: text(3, 120), category: z.enum(categories
 const validOldPrice = value => value.oldPrice == null || value.oldPrice > value.price;
 const product = productFields.refine(validOldPrice, { path: ['oldPrice'], message: 'Old price must be higher than the selling price.' });
 const productUpdate = productFields.omit({ image: true, stockCount: true }).extend({ image: productFields.shape.image.optional(), stockCount: z.number().int().min(0).max(100000) }).strict().refine(validOldPrice, { path: ['oldPrice'], message: 'Old price must be higher than the selling price.' });
-const checkout = z.object({ items: z.array(z.object({ productId: text(1, 100), quantity: z.number().int().min(1).max(100) }).strict()).min(1).max(20), deliveryAddress: text(5, 500), note: z.string().trim().max(1000).default('') }).strict();
-const bulk = z.object({ title: text(5, 150), category: z.enum(categories), quantity: text(1, 100), budget: z.number().positive().max(100000000), location: text(2, 100), notes: z.string().trim().max(3000) }).strict();
-module.exports = { z, text, registration, product, productUpdate, checkout, bulk };
+module.exports = { z, text, registration, product, productUpdate };

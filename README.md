@@ -1,21 +1,21 @@
 # Farmyn Nigeria
 
-Farm produce marketplace with an AWS-backed API, Cognito accounts, DynamoDB records, private S3 photos and Paystack test checkout.
+Farmyn is a listing and chat marketplace for farm products. Sellers publish products with photos, prices, available quantities, and locations. Buyers browse those listings and message sellers directly to discuss availability, pickup, delivery, and payment.
 
-## Status
+Farmyn does not process payments, hold funds, create orders, or provide escrow.
 
-Production preparation is implemented; AWS deployment and hosted acceptance are still required. Live payments are blocked. There is no seeded catalogue, demo account, sample order, fake review or local account fallback.
-
-Read [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md) for the architecture, deployment procedure and release requirements. The earlier local-file payment adapter exists only for regression tests and is excluded from the Lambda package.
+Seller promotion is optional: a seven-day listing Boost costs ₦2,000, a seven-day category banner costs ₦5,000, and a seven-day homepage banner costs ₦10,000. Sellers submit requests from their dashboard and the super-admin schedules approved campaigns.
 
 ## Development
 
-Use Node.js 22 or newer. Run `npm ci`, copy each app's `.env.example` to a private `.env`, and supply your AWS staging outputs. Run `npm run dev`. Without AWS configuration the API fails closed and the site shows a setup message.
+Use Node.js 22 or newer. Run `npm ci`, copy each app's `.env.example` to a private `.env`, provide the AWS staging values, and run `npm run dev`.
 
-- `apps/web`: Next.js frontend; server-side `API_ORIGIN` forwards `/api` to the backend.
-- `apps/backend`: Express API; deployed to Lambda behind API Gateway with the SAM template in `infra/`.
-- `npm test --workspace backend`: API security and payment regression tests with isolated test doubles.
-- `npm run lint --workspace web`: frontend lint checks.
-- `npm run build`: production frontend build.
+- `apps/web`: Next.js frontend with marketplace, seller profiles, dashboards, and chat.
+- `apps/backend`: Express API using Cognito, DynamoDB, and private S3 product photos.
+- `npm test --workspace backend`: backend validation tests.
+- `npm run lint --workspace web`: frontend lint.
+- `npm run build`: production build.
 
-Private environment files, payment test records and generated builds are ignored. The deployment build copies an explicit source allowlist so private local files cannot enter the Lambda archive.
+The API stores profiles, listings, sessions, and mirrored chat messages in DynamoDB. Product photos are stored privately in S3 and returned through short-lived signed URLs.
+
+The private `/admin` console shows platform metrics, users, listings, promotion requests, active boosts, scheduled banners, and an activity log. Configure `ADMIN_EMAIL` and a scrypt `ADMIN_PASSWORD_HASH` only in the backend environment.
