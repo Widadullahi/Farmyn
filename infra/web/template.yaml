@@ -17,6 +17,10 @@ Parameters:
     Type: String
     Default: ''
     Description: us-east-1 ACM certificate covering DomainName and www.DomainName.
+  EdgeSecretName:
+    Type: String
+    Default: farmyn/edge
+    Description: Secrets Manager secret (created by the farmyn stack) sent to the API as x-farmyn-edge.
 Conditions:
   HasDomain: !Not [!Equals [!Ref DomainName, '']]
 Resources:
@@ -116,15 +120,16 @@ Resources:
         SigningBehavior: always
         SigningProtocol: sigv4
 
-  # Viewer-request: send www to the apex (the API only accepts the apex origin)
-  # and pass the viewer host to Next.js, since the Lambda origin gets its own Host.
+  # Viewer-request: send www to the apex (the API only accepts the apex origin),
+  # pass the viewer host to Next.js (the Lambda origin gets its own Host), and
+  # stamp the viewer IP for the API's rate limiter, overwriting any client value.
   Edge:
     Type: AWS::CloudFront::Function
     Properties:
       Name: !Sub '${AWS::StackName}-viewer-request'
       AutoPublish: true
       FunctionConfig:
-        Comment: www redirect and x-forwarded-host
+        Comment: www redirect, x-forwarded-host, viewer IP
         Runtime: cloudfront-js-2.0
       FunctionCode: !Sub
         - |
@@ -140,6 +145,7 @@ Resources:
                 headers: { location: { value: 'https://${Apex}' + r.uri + (qs ? '?' + qs : '') } } };
             }
             r.headers['x-forwarded-host'] = { value: host };
+            r.headers['x-farmyn-viewer-ip'] = { value: event.viewer.ip };
             return r;
           }
         - Apex: !Ref DomainName
@@ -169,6 +175,9 @@ Resources:
               OriginSSLProtocols: [TLSv1.2]
           - Id: api
             DomainName: !Ref ApiDomain
+            OriginCustomHeaders:
+              - HeaderName: x-farmyn-edge
+                HeaderValue: !Sub '{{resolve:secretsmanager:${EdgeSecretName}:SecretString:EDGE_SECRET}}'
             CustomOriginConfig:
               OriginProtocolPolicy: https-only
               OriginSSLProtocols: [TLSv1.2]

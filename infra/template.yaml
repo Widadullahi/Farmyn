@@ -128,6 +128,18 @@ Resources:
         IdToken: hours
       ReadAttributes: [email, email_verified, name, phone_number, 'custom:role', 'custom:location', 'custom:storeName']
       WriteAttributes: [email, name, phone_number, 'custom:role', 'custom:location', 'custom:storeName']
+  # CloudFront sends this as x-farmyn-edge so the API can trust its
+  # x-farmyn-viewer-ip header for rate limiting (see infra/web/template.yaml).
+  EdgeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/edge'
+      Description: Shared secret CloudFront sends to the Farmyn API to vouch for x-farmyn-viewer-ip.
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: EDGE_SECRET
+        PasswordLength: 64
+        ExcludePunctuation: true
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -157,6 +169,7 @@ Resources:
           PRODUCT_PHOTOS_BUCKET: !Ref Photos
           ADMIN_EMAIL: !Ref AdminEmail
           ADMIN_PASSWORD_HASH: !Ref AdminPasswordHash
+          EDGE_SECRET_ARN: !Ref EdgeSecret
       Policies:
         - Statement:
             - Effect: Allow
@@ -165,6 +178,9 @@ Resources:
             - Effect: Allow
               Action: [s3:GetObject, s3:PutObject]
               Resource: !Sub '${Photos.Arn}/products/*'
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref EdgeSecret
       Events:
         All:
           Type: HttpApi
@@ -231,3 +247,5 @@ Outputs:
     Value: !Ref Data
   PhotoBucket:
     Value: !Ref Photos
+  EdgeSecretName:
+    Value: !Sub '${AWS::StackName}/edge'
