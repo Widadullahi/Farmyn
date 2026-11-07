@@ -145,7 +145,9 @@ Resources:
       Architectures: [x86_64]
       MemorySize: 1024
       Timeout: 29
-      ReservedConcurrentExecutions: 10
+      # No ReservedConcurrentExecutions: new accounts start with a 10-execution
+      # limit and Lambda refuses reservations that leave fewer than 10 unreserved.
+      # HttpApi throttling (20 rps, burst 40) bounds traffic instead.
       Environment:
         Variables:
           NODE_ENV: production

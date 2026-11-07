@@ -1,0 +1,216 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  Farmyn web frontend (Next.js via OpenNext). CloudFront serves static assets
+  from S3, routes /api/* straight to the backend HTTP API, and everything else
+  to the Next.js server Lambda. Build first: see infra/web/deploy.sh.
+Parameters:
+  ApiDomain:
+    Type: String
+    AllowedPattern: '[a-z0-9]+\.execute-api\.[a-z0-9-]+\.amazonaws\.com'
+    Description: Backend HTTP API domain (farmyn stack ApiOrigin output, without https://).
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Apex domain (e.g. farmyn.com.ng). Empty serves only on the cloudfront.net domain.
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: us-east-1 ACM certificate covering DomainName and www.DomainName.
+Conditions:
+  HasDomain: !Not [!Equals [!Ref DomainName, '']]
+Resources:
+  Assets:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  AssetsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Assets
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub '${Assets.Arn}/_assets/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt Assets.Arn, !Sub '${Assets.Arn}/*']
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
+  Server:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../apps/web/.open-next/server-functions/default/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      MemorySize: 1024
+      Timeout: 20
+      Environment:
+        Variables:
+          CACHE_BUCKET_NAME: !Ref Assets
+          CACHE_BUCKET_KEY_PREFIX: _cache
+          CACHE_BUCKET_REGION: !Ref AWS::Region
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [s3:GetObject]
+              Resource: !Sub '${Assets.Arn}/_cache/*'
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+  ServerLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${Server}'
+      RetentionInDays: 30
+  ServerUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Server
+      Action: lambda:InvokeFunctionUrl
+      FunctionUrlAuthType: AWS_IAM
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+  ServerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Server
+      Action: lambda:InvokeFunction
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+  S3Access:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-s3'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  LambdaAccess:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-lambda'
+        OriginAccessControlOriginType: lambda
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Viewer-request: send www to the apex (the API only accepts the apex origin)
+  # and pass the viewer host to Next.js, since the Lambda origin gets its own Host.
+  Edge:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub '${AWS::StackName}-viewer-request'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: www redirect and x-forwarded-host
+        Runtime: cloudfront-js-2.0
+      FunctionCode: !Sub
+        - |
+          function handler(event) {
+            var r = event.request, host = r.headers.host.value;
+            if ('${Apex}' && host === 'www.${Apex}') {
+              var qs = Object.keys(r.querystring).map(function (k) {
+                var q = r.querystring[k];
+                var vals = q.multiValue ? q.multiValue.map(function (m) { return m.value; }) : [q.value];
+                return vals.map(function (v) { return encodeURIComponent(k) + '=' + encodeURIComponent(v); }).join('&');
+              }).join('&');
+              return { statusCode: 301, statusDescription: 'Moved Permanently',
+                headers: { location: { value: 'https://${Apex}' + r.uri + (qs ? '?' + qs : '') } } };
+            }
+            r.headers['x-forwarded-host'] = { value: host };
+            return r;
+          }
+        - Apex: !Ref DomainName
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Farmyn web
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_All
+        Aliases: !If [HasDomain, [!Ref DomainName, !Sub 'www.${DomainName}'], !Ref AWS::NoValue]
+        ViewerCertificate: !If
+          - HasDomain
+          - AcmCertificateArn: !Ref CertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: server
+            DomainName: !Select [2, !Split ['/', !GetAtt ServerUrl.FunctionUrl]]
+            OriginAccessControlId: !GetAtt LambdaAccess.Id
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+          - Id: api
+            DomainName: !Ref ApiDomain
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+          - Id: assets
+            DomainName: !GetAtt Assets.RegionalDomainName
+            OriginPath: /_assets
+            OriginAccessControlId: !GetAtt S3Access.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: server
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          Compress: true
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # CachingDisabled
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt Edge.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+          # Static files from S3 (CachingOptimized policy): Next build output
+          # plus the public/ file types.
+          - { PathPattern: /_next/*, TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: /BUILD_ID, TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.png', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.jpg', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.jpeg', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.webp', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.svg', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: '*.ico', TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+          - { PathPattern: /robots.txt, TargetOriginId: assets, ViewerProtocolPolicy: redirect-to-https, AllowedMethods: [GET, HEAD, OPTIONS], Compress: true, CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 }
+Outputs:
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomain:
+    Value: !GetAtt Distribution.DomainName
+  AssetsBucket:
+    Value: !Ref Assets
