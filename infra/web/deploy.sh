@@ -13,10 +13,7 @@ API_ORIGIN=$(aws cloudformation describe-stacks --stack-name farmyn --region $RE
   --query "Stacks[0].Outputs[?OutputKey=='ApiOrigin'].OutputValue" --output text)
 API_DOMAIN=${API_ORIGIN#https://}
 
-# Next 15 is past its support window; drop this flag once upgraded to Next 16.
-# (The flag needs a value: OpenNext 3.10's arg parser drops a trailing bare flag.)
-(cd "$ROOT/apps/web" && rm -rf .open-next && API_ORIGIN=$API_ORIGIN \
-  npx open-next build --dangerously-use-unsupported-next-version true)
+(cd "$ROOT/apps/web" && rm -rf .open-next && API_ORIGIN=$API_ORIGIN npx open-next build)
 
 sam deploy --template-file template.yaml --stack-name $STACK --region $REGION \
   --resolve-s3 --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset \
