@@ -18,4 +18,4 @@ Use Node.js 22 or newer. Run `npm ci`, copy each app's `.env.example` to a priva
 
 The API stores profiles, listings, sessions, and mirrored chat messages in DynamoDB. Product photos are stored privately in S3 and returned through short-lived signed URLs.
 
-The private `/admin` console shows platform metrics, users, listings, promotion requests, active boosts, scheduled banners, and an activity log. Configure `ADMIN_EMAIL` and a scrypt `ADMIN_PASSWORD_HASH` only in the backend environment.
+The private `/admin` console shows platform metrics, users, listings, promotion requests, active boosts, scheduled banners, and an activity log. Configure `ADMIN_EMAIL` and a scrypt `ADMIN_PASSWORD_HASH` only in the backend environment (in AWS the hash lives in the `farmyn/admin` secret; see `PRODUCTION_SETUP.md`).

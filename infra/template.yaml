@@ -13,10 +13,6 @@ Parameters:
     Type: String
     Default: alagbewidad814@gmail.com
     Description: Email allowed to sign in to the Farmyn super-admin console.
-  AdminPasswordHash:
-    Type: String
-    NoEcho: true
-    Description: Scrypt salt:hash value for the super-admin password.
 Resources:
   Data:
     Type: AWS::DynamoDB::Table
@@ -128,6 +124,23 @@ Resources:
         IdToken: hours
       ReadAttributes: [email, email_verified, name, phone_number, 'custom:role', 'custom:location', 'custom:storeName']
       WriteAttributes: [email, name, phone_number, 'custom:role', 'custom:location', 'custom:storeName']
+  # Holds ADMIN_PASSWORD_HASH (scrypt salt:hash). Created with a random value that
+  # is not a valid hash, so admin sign-in fails closed until an operator sets it:
+  # aws secretsmanager put-secret-value --secret-id farmyn/admin
+  #   --secret-string '{"ADMIN_PASSWORD_HASH":"<salt>:<hash>"}'
+  # Later deploys never overwrite the stored value.
+  AdminSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: !Sub '${AWS::StackName}/admin'
+      Description: Farmyn super-admin password hash (scrypt salt:hash).
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: ADMIN_PASSWORD_HASH
+        PasswordLength: 32
+        ExcludePunctuation: true
   # CloudFront sends this as x-farmyn-edge so the API can trust its
   # x-farmyn-viewer-ip header for rate limiting (see infra/web/template.yaml).
   EdgeSecret:
@@ -168,7 +181,7 @@ Resources:
           COGNITO_CLIENT_ID: !Ref AccountClient
           PRODUCT_PHOTOS_BUCKET: !Ref Photos
           ADMIN_EMAIL: !Ref AdminEmail
-          ADMIN_PASSWORD_HASH: !Ref AdminPasswordHash
+          ADMIN_SECRET_ARN: !Ref AdminSecret
           EDGE_SECRET_ARN: !Ref EdgeSecret
       Policies:
         - Statement:
@@ -180,7 +193,7 @@ Resources:
               Resource: !Sub '${Photos.Arn}/products/*'
             - Effect: Allow
               Action: secretsmanager:GetSecretValue
-              Resource: !Ref EdgeSecret
+              Resource: [!Ref EdgeSecret, !Ref AdminSecret]
       Events:
         All:
           Type: HttpApi

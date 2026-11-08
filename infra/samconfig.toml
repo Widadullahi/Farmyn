@@ -12,4 +12,4 @@ resolve_s3 = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = false
 fail_on_empty_changeset = false
-parameter_overrides = "WebOrigin=https://farmyn.com.ng PaystackSecretArn=arn:aws:secretsmanager:us-east-1:136889124549:secret:farmyn/paystack-RCm7g5 AlertEmail=farmyn.ng@gmail.com"
+parameter_overrides = "WebOrigin=https://farmyn.com.ng AlertEmail=farmyn.ng@gmail.com"
