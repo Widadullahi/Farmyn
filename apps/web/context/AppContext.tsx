@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { allCategories, AppState, initialAppState, User } from "@/lib/app-data";
 type Result = { ok: boolean; message: string; user?: User };
-interface RegisterInput { name: string; email: string; phone: string; password: string; location: string; storeName?: string }
+interface RegisterInput { name: string; email: string; phone: string; password: string; location: string; storeName?: string; referralCode?: string }
 interface ProductInput { name: string; category: string; price: number; oldPrice?: number | null; stockCount: number; unit: string; minimumOrder: string; image: string; location: string; description: string }
 interface AppContextValue extends AppState {
   currentUser: User | null; isHydrated: boolean; serviceError: string; categories: string[];

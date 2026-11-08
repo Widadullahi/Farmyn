@@ -13,6 +13,8 @@ test('listing validation accepts marketplace fields and rejects remote images', 
 test('registration creates one account type without a buyer or seller choice', () => {
   const account = { email: 'member@example.com', password: 'ValidPassword123!', name: 'Test Member', phone: '+2348000000000', location: 'Lagos' };
   assert.equal(registration.safeParse(account).success, true);
+  assert.equal(registration.safeParse({ ...account, referralCode: 'GARRI123' }).success, true);
+  assert.equal(registration.safeParse({ ...account, referralCode: 'short' }).success, false);
   assert.equal(registration.safeParse({ ...account, role: 'buyer' }).success, false);
 });
 

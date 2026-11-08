@@ -12,6 +12,9 @@ export interface User {
   verified: boolean;
   emailVerified: boolean;
   joinedAt: string;
+  referralCode?: string;
+  referralCount?: number;
+  referredBy?: string;
 }
 
 export interface Product {

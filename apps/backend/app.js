@@ -10,6 +10,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const sharp = require('sharp');
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const publicUser = u => ({ id: u.id, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
+const referralCodeFor = id => hash(`farmyn-referral:${id}`).slice(0, 8).toUpperCase();
 // Behind CloudFront the socket address is an edge server shared by many viewers.
 // CloudFront stamps the viewer IP into x-farmyn-viewer-ip (overwriting any client
 // value) and adds x-farmyn-edge; trust the IP header only when that secret matches,
@@ -60,7 +61,8 @@ function createApp(config = {}, dependencies = {}) {
   app.post('/api/auth/register', wrap(async (req, res) => {
     await throttle(req, 'register', 5); const v = registration.parse(req.body);
     await cognito.send(new SignUpCommand({ ClientId: config.clientId, Username: v.email, Password: v.password, UserAttributes: Object.entries({ email: v.email, name: v.name, phone_number: v.phone, 'custom:role': 'seller', 'custom:location': v.location, ...(v.storeName ? { 'custom:storeName': v.storeName } : {}) }).map(([Name, Value]) => ({ Name, Value })) }));
-    await activity('user.registration_requested', { email: v.email, name: v.name }, { accountType: 'member' });
+    if (v.referralCode) await store.put({ pk: 'REFERRAL_PENDING', sk: hash(v.email), referralCode: v.referralCode, createdAt: new Date().toISOString(), expiresAt: Math.floor(Date.now() / 1000) + 604800 });
+    await activity('user.registration_requested', { email: v.email, name: v.name }, { accountType: 'member', referred: Boolean(v.referralCode) });
     res.status(201).json({ message: 'Check your email for your verification code.' });
   }));
   app.post('/api/auth/confirm', wrap(async (req, res) => { await throttle(req, 'confirm'); const v = z.object({ email, code: z.string().regex(/^\d{6}$/) }).strict().parse(req.body); await cognito.send(new ConfirmSignUpCommand({ ClientId: config.clientId, Username: v.email, ConfirmationCode: v.code })); await activity('user.email_verified', { email: v.email }); res.json({ message: 'Email verified. You can now sign in.' }); }));
@@ -74,11 +76,29 @@ function createApp(config = {}, dependencies = {}) {
     if (a.email_verified !== 'true') throw error(403, 'Verify your email before signing in.');
     let user = (await store.get('PROFILE', a.sub))?.data;
     if (!user) {
-      user = { id: a.sub, name: a.name, email: a.email, phone: a.phone_number || '', role: 'seller', location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString() };
+      user = { id: a.sub, name: a.name, email: a.email, phone: a.phone_number || '', role: 'seller', location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString(), referralCode: referralCodeFor(a.sub), referralCount: 0 };
     }
     // Migrate legacy buyer profiles on sign-in and make every account discoverable as a seller.
-    user = { ...user, role: 'seller' };
+    user = { ...user, role: 'seller', referralCode: user.referralCode || referralCodeFor(user.id), referralCount: user.referralCount || 0 };
     await store.transact([{ Put: { Item: { pk: 'PROFILE', sk: user.id, data: user } } }, { Put: { Item: { pk: 'SELLER', sk: user.id, data: publicUser(user) } } }]);
+    await store.put({ pk: 'REFERRAL_CODE', sk: user.referralCode, userId: user.id });
+    const pendingReferral = !user.referredBy && await store.get('REFERRAL_PENDING', hash(user.email.toLowerCase()));
+    if (pendingReferral) {
+      const referrer = await store.get('REFERRAL_CODE', pendingReferral.referralCode);
+      if (referrer?.userId && referrer.userId !== user.id) {
+        try {
+          const qualifiedAt = new Date().toISOString();
+          await store.transact([
+            { Put: { Item: { pk: 'REFERRAL', sk: user.id, referrerId: referrer.userId, referredUserId: user.id, referredName: user.name, qualifiedAt }, ConditionExpression: 'attribute_not_exists(pk)' } },
+            { Update: { Key: { pk: 'PROFILE', sk: referrer.userId }, UpdateExpression: 'SET #d.referralCount = if_not_exists(#d.referralCount, :zero) + :one', ExpressionAttributeNames: { '#d': 'data' }, ExpressionAttributeValues: { ':zero': 0, ':one': 1 } } },
+            { Update: { Key: { pk: 'PROFILE', sk: user.id }, UpdateExpression: 'SET #d.referredBy = :referrer', ExpressionAttributeNames: { '#d': 'data' }, ExpressionAttributeValues: { ':referrer': referrer.userId } } },
+          ]);
+          user = { ...user, referredBy: referrer.userId };
+          await activity('referral.qualified', user, { referrerId: referrer.userId });
+        } catch (e) { if (e.name !== 'TransactionCanceledException') throw e; }
+      }
+      await store.delete('REFERRAL_PENDING', hash(user.email.toLowerCase()));
+    }
     await store.put({ pk: 'EMAIL', sk: hash(user.email.toLowerCase()), userId: user.id });
     const old = sessionKey(req); if (old) await store.delete('SESSION', old);
     const token = crypto.randomBytes(32).toString('hex'); await store.put({ pk: 'SESSION', sk: hash(token), userId: user.id, authVersion: user.authVersion || 0, expiresAt: Math.floor(Date.now() / 1000) + 28800 });
@@ -170,9 +190,10 @@ function createApp(config = {}, dependencies = {}) {
   }));
   app.post('/api/admin/logout', wrap(async (req, res) => { const key = adminSessionKey(req); if (key) await store.delete('ADMIN_SESSION', key); res.set('Set-Cookie', adminCookie('', 0)); res.json({ message: 'Signed out.' }); }));
   app.get('/api/admin/overview', admin(), wrap(async (req, res) => {
-    const [profiles, products, sellers, banners, boosts, events, requests] = await Promise.all(['PROFILE', 'PRODUCT', 'SELLER', 'BANNER', 'BOOST', 'ACTIVITY', 'PROMO_REQUEST'].map(pk => store.list(pk)));
+    const [profiles, products, sellers, banners, boosts, events, requests, referrals] = await Promise.all(['PROFILE', 'PRODUCT', 'SELLER', 'BANNER', 'BOOST', 'ACTIVITY', 'PROMO_REQUEST', 'REFERRAL'].map(pk => store.list(pk)));
     const now = Date.now(), activities = events.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    res.json({ adminEmail: req.admin.email, metrics: { users: profiles.length, sellers: profiles.length, buyers: 0, listings: products.length, activeListings: products.filter(r => r.data.stockCount > 0).length, messages: activities.filter(a => a.type === 'message.sent').length, activeBoosts: boosts.filter(r => Date.parse(r.data.endsAt) > now).length, activeBanners: banners.filter(r => r.data.status === 'active' && Date.parse(r.data.startsAt) <= now && Date.parse(r.data.endsAt) > now).length, pendingPromotions: requests.filter(r => r.data.status === 'pending').length }, users: profiles.map(r => r.data).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)), listings: products.map(r => r.data), banners: banners.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), boosts: boosts.map(r => r.data), promotionRequests: requests.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), activities: activities.slice(0, 200) });
+    const referralEntries = profiles.reduce((total, row) => total + Math.floor((row.data.referralCount || 0) / 10), 0);
+    res.json({ adminEmail: req.admin.email, metrics: { users: profiles.length, sellers: profiles.length, buyers: 0, listings: products.length, activeListings: products.filter(r => r.data.stockCount > 0).length, messages: activities.filter(a => a.type === 'message.sent').length, activeBoosts: boosts.filter(r => Date.parse(r.data.endsAt) > now).length, activeBanners: banners.filter(r => r.data.status === 'active' && Date.parse(r.data.startsAt) <= now && Date.parse(r.data.endsAt) > now).length, pendingPromotions: requests.filter(r => r.data.status === 'pending').length, qualifiedReferrals: referrals.length, referralEntries }, users: profiles.map(r => r.data).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)), listings: products.map(r => r.data), banners: banners.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), boosts: boosts.map(r => r.data), promotionRequests: requests.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), referrals: referrals.map(r => r), activities: activities.slice(0, 200) });
   }));
   app.post('/api/admin/banners', admin(), wrap(async (req, res) => {
     const v = z.object({ title: text(3, 100), subtitle: text(3, 220), imageUrl: z.string().url().max(1000), ctaLabel: text(2, 30), ctaHref: z.string().regex(/^\/[a-zA-Z0-9/?=&%_.-]*$/).max(300), placement: z.enum(['homepage', 'category']), startsAt: z.string().datetime(), endsAt: z.string().datetime(), price: z.number().nonnegative().max(10000000), sponsorName: text(2, 100) }).strict().parse(req.body);

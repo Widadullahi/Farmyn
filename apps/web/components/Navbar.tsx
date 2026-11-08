@@ -20,7 +20,9 @@ const Navbar = () => {
     { label: "Home", href: "/", icon: Home, description: "Fresh finds and farm favourites" },
     { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, description: "Browse products from local sellers" },
     { label: "How it works", href: "/#how-it-works", icon: Leaf, description: "See how direct farm trade works" },
+    { label: "Plans", href: "/#pricing", icon: LayoutDashboard, description: "Compare monthly seller plans" },
     { label: "Promote", href: "/#promote", icon: Store, description: "Give your listings more visibility" },
+    { label: "Win garri", href: "/#referral", icon: Leaf, description: "Invite friends and earn draw entries" },
     { label: "About us", href: "/about", icon: Info, description: "Get to know Farmyn" },
     ...(currentUser ? [
       { label: "Messages", href: "/chat", icon: MessageSquare, description: "Connect with buyers and farmers" },

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Activity, ImageIcon, ListChecks, LogOut, Megaphone, MessageSquare, RefreshCw, Rocket, Store, Users } from "lucide-react";
+import { Activity, Gift, ImageIcon, ListChecks, LogOut, Megaphone, MessageSquare, RefreshCw, Rocket, Store, Users } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDate, formatNaira, Product, User } from "@/lib/app-data";
@@ -32,7 +32,7 @@ export default function AdminPage() {
   if (!overview) return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4"><form onSubmit={signIn} className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-7 text-white shadow-2xl"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">Farmyn control centre</p><h1 className="mt-3 text-2xl font-bold">Super-admin sign in</h1><p className="mt-2 text-sm text-slate-400">Private access for platform operations and advertising.</p><div className="mt-7 space-y-4"><Input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="border-white/10 bg-slate-950" /><Input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" className="border-white/10 bg-slate-950" /><Button className="w-full">Sign in securely</Button></div></form></main>;
 
   const metrics = [
-    ["Users", overview.metrics.users, Users], ["Sellers", overview.metrics.sellers, Store], ["Listings", overview.metrics.listings, ListChecks], ["Messages", overview.metrics.messages, MessageSquare], ["Active boosts", overview.metrics.activeBoosts, Rocket], ["Active banners", overview.metrics.activeBanners, ImageIcon], ["Promotion requests", overview.metrics.pendingPromotions, Megaphone],
+    ["Users", overview.metrics.users, Users], ["Sellers", overview.metrics.sellers, Store], ["Listings", overview.metrics.listings, ListChecks], ["Messages", overview.metrics.messages, MessageSquare], ["Active boosts", overview.metrics.activeBoosts, Rocket], ["Active banners", overview.metrics.activeBanners, ImageIcon], ["Promotion requests", overview.metrics.pendingPromotions, Megaphone], ["Qualified referrals", overview.metrics.qualifiedReferrals, Users], ["Garri draw entries", overview.metrics.referralEntries, Gift],
   ] as const;
   const tabs = ["overview", "users", "listings", "promotions", "banners", "activity"] as const;
   return <div className="min-h-screen bg-slate-100 text-slate-900">
