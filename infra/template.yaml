@@ -13,6 +13,18 @@ Parameters:
     Type: String
     Default: alagbewidad814@gmail.com
     Description: Email allowed to sign in to the Farmyn super-admin console.
+  CognitoFromEmail:
+    Type: String
+    Default: ''
+    Description: Optional SES-verified sender email, such as no-reply@farmyn.ng.
+  CognitoEmailSourceArn:
+    Type: String
+    Default: ''
+    Description: Optional ARN of the verified SES email identity or domain.
+Conditions:
+  UseCustomCognitoEmail: !And
+    - !Not [!Equals [!Ref CognitoFromEmail, '']]
+    - !Not [!Equals [!Ref CognitoEmailSourceArn, '']]
 Resources:
   Data:
     Type: AWS::DynamoDB::Table
@@ -83,6 +95,23 @@ Resources:
     Properties:
       UsernameAttributes: [email]
       AutoVerifiedAttributes: [email]
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailSubject: Verify your Farmyn account
+        EmailMessage: |
+          Welcome to Farmyn!
+
+          Use this verification code to confirm your email address: {####}
+
+          This code was requested for a Farmyn account. If you did not create an account, you can safely ignore this email.
+
+          Farmyn — buy and sell farm products directly.
+      EmailConfiguration: !If
+        - UseCustomCognitoEmail
+        - EmailSendingAccount: DEVELOPER
+          From: !Sub 'Farmyn <${CognitoFromEmail}>'
+          SourceArn: !Ref CognitoEmailSourceArn
+        - EmailSendingAccount: COGNITO_DEFAULT
       UsernameConfiguration:
         CaseSensitive: false
       AccountRecoverySetting:

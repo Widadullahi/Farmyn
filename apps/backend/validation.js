@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const text = (min, max) => z.string().trim().min(min).max(max);
 const categories = ['Vegetables', 'Fruits', 'Grains & Cereals', 'Spices & Seasonings', 'Poultry & Eggs', 'Livestock & Meat', 'Pantry Ingredients'];
-const registration = z.object({ email: z.string().email().max(254).transform(v => v.toLowerCase()), password: z.string().min(12).max(128), name: text(2, 100), phone: z.string().regex(/^\+[1-9]\d{7,14}$/), role: z.enum(['buyer', 'seller']), location: text(2, 100), storeName: text(2, 100).optional() }).strict();
+const registration = z.object({ email: z.string().email().max(254).transform(v => v.toLowerCase()), password: z.string().min(12).max(128), name: text(2, 100), phone: z.string().regex(/^\+[1-9]\d{7,14}$/), location: text(2, 100), storeName: text(2, 100).optional() }).strict();
 const price = z.number().positive().max(10000000).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.000001);
 const productFields = z.object({ name: text(3, 120), category: z.enum(categories), price, oldPrice: price.nullable().optional(), stockCount: z.number().int().min(1).max(100000), unit: text(1, 40), minimumOrder: text(1, 80), image: z.string().regex(/^products\/[a-zA-Z0-9_-]+\/[a-f0-9-]+\.jpg$/), location: text(2, 100), description: text(10, 3000) }).strict();
 const validOldPrice = value => value.oldPrice == null || value.oldPrice > value.price;

@@ -12,7 +12,7 @@ import { useApp } from "@/context/AppContext";
 export default function SellerStorePage() {
   const { sellerId } = useParams<{ sellerId: string }>();
   const { users, products, isHydrated } = useApp();
-  const seller = users.find((user) => user.id === sellerId && user.role === "seller");
+  const seller = users.find((user) => user.id === sellerId);
   const listings = products.filter((product) => product.sellerId === sellerId);
 
   return (

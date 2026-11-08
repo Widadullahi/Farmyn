@@ -17,7 +17,7 @@ export default function SellerDashboardPage() {
   const [form, setForm] = useState({ name: "", category: marketplaceCategories[0] as string, price: "", stockCount: "", unit: "", minimumOrder: "", location: currentUser?.location || "", description: "", image: "" });
   const [busy, setBusy] = useState(false);
   const [promoBusy, setPromoBusy] = useState("");
-  if (!currentUser || currentUser.role !== "seller") return <><Navbar /><main className="container min-h-[65vh] py-20 text-center"><h1 className="text-3xl font-bold">Seller workspace</h1><p className="mt-3 text-muted-foreground">Sign in with a seller account to publish listings.</p><Button asChild className="mt-6"><Link href="/login">Log in</Link></Button></main><Footer /></>;
+  if (!currentUser) return <><Navbar /><main className="container min-h-[65vh] py-20 text-center"><h1 className="text-3xl font-bold">Your listings</h1><p className="mt-3 text-muted-foreground">Sign in to publish and manage products.</p><Button asChild className="mt-6"><Link href="/login">Log in</Link></Button></main><Footer /></>;
   const mine = products.filter(product => product.sellerId === currentUser.id);
   const update = (key: string, value: string) => setForm(previous => ({ ...previous, [key]: value }));
   const publish = async (event: React.FormEvent) => { event.preventDefault(); if (!form.image) return toast.error("Upload a product photo."); setBusy(true); const result = await addProduct({ ...form, price: Number(form.price), stockCount: Number(form.stockCount) }); setBusy(false); if (!result.ok) return toast.error(result.message); toast.success(result.message); setForm(previous => ({ ...previous, name: "", price: "", stockCount: "", unit: "", minimumOrder: "", description: "", image: "" })); };

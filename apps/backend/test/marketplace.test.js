@@ -10,10 +10,10 @@ test('listing validation accepts marketplace fields and rejects remote images', 
   assert.equal(product.safeParse({ ...listing, price: -1 }).success, false);
 });
 
-test('registration only allows buyer and seller accounts', () => {
-  const account = { email: 'buyer@example.com', password: 'ValidPassword123!', name: 'Test Buyer', phone: '+2348000000000', role: 'buyer', location: 'Lagos' };
+test('registration creates one account type without a buyer or seller choice', () => {
+  const account = { email: 'member@example.com', password: 'ValidPassword123!', name: 'Test Member', phone: '+2348000000000', location: 'Lagos' };
   assert.equal(registration.safeParse(account).success, true);
-  assert.equal(registration.safeParse({ ...account, role: 'admin' }).success, false);
+  assert.equal(registration.safeParse({ ...account, role: 'buyer' }).success, false);
 });
 
 test('shared API helpers create status errors and stable hashes', () => {

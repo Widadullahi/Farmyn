@@ -46,7 +46,8 @@ function createApp(config = {}, dependencies = {}) {
   app.use(express.json({ limit: '32kb' }));
   app.use((req, res, next) => { (async () => { const key = sessionKey(req); if (key) { const session = await store.get('SESSION', key); if (session?.expiresAt > Date.now() / 1000) { const user = (await store.get('PROFILE', session.userId))?.data; if (user && (user.authVersion || 0) === (session.authVersion || 0)) req.user = user; } } })().then(() => next(), next); });
   app.use((req, res, next) => { (async () => { const key = adminSessionKey(req); if (key) { const session = await store.get('ADMIN_SESSION', key); if (session?.expiresAt > Date.now() / 1000 && session.email === config.adminEmail?.toLowerCase()) req.admin = { email: session.email }; } })().then(() => next(), next); });
-  const auth = role => (req, res, next) => !req.user ? next(error(401, 'Please sign in.')) : role && req.user.role !== role ? next(error(403, 'This action is not available for your account.')) : next();
+  // Farmyn uses one account type: every signed-in member can browse, chat and sell.
+  const auth = () => (req, res, next) => !req.user ? next(error(401, 'Please sign in.')) : next();
   const admin = () => (req, res, next) => !req.admin ? next(error(401, 'Super-admin sign-in required.')) : next();
   const throttle = async (req, kind, max = 10) => {
     const ip = clientIp(req, config.edgeSecret);
@@ -58,8 +59,8 @@ function createApp(config = {}, dependencies = {}) {
   const activity = async (type, actor, details = {}) => { const createdAt = new Date().toISOString(), id = crypto.randomUUID(); await store.put({ pk: 'ACTIVITY', sk: `${createdAt}#${id}`, data: { id, type, actorId: actor?.id, actorName: actor?.storeName || actor?.name || actor?.email || 'System', createdAt, ...details } }); };
   app.post('/api/auth/register', wrap(async (req, res) => {
     await throttle(req, 'register', 5); const v = registration.parse(req.body);
-    await cognito.send(new SignUpCommand({ ClientId: config.clientId, Username: v.email, Password: v.password, UserAttributes: Object.entries({ email: v.email, name: v.name, phone_number: v.phone, 'custom:role': v.role, 'custom:location': v.location, ...(v.storeName ? { 'custom:storeName': v.storeName } : {}) }).map(([Name, Value]) => ({ Name, Value })) }));
-    await activity('user.registration_requested', { email: v.email, name: v.name }, { role: v.role });
+    await cognito.send(new SignUpCommand({ ClientId: config.clientId, Username: v.email, Password: v.password, UserAttributes: Object.entries({ email: v.email, name: v.name, phone_number: v.phone, 'custom:role': 'seller', 'custom:location': v.location, ...(v.storeName ? { 'custom:storeName': v.storeName } : {}) }).map(([Name, Value]) => ({ Name, Value })) }));
+    await activity('user.registration_requested', { email: v.email, name: v.name }, { accountType: 'member' });
     res.status(201).json({ message: 'Check your email for your verification code.' });
   }));
   app.post('/api/auth/confirm', wrap(async (req, res) => { await throttle(req, 'confirm'); const v = z.object({ email, code: z.string().regex(/^\d{6}$/) }).strict().parse(req.body); await cognito.send(new ConfirmSignUpCommand({ ClientId: config.clientId, Username: v.email, ConfirmationCode: v.code })); await activity('user.email_verified', { email: v.email }); res.json({ message: 'Email verified. You can now sign in.' }); }));
@@ -70,12 +71,14 @@ function createApp(config = {}, dependencies = {}) {
     if (!r.AuthenticationResult?.AccessToken) throw error(401, 'Additional account verification is required.');
     const result = await cognito.send(new GetUserCommand({ AccessToken: r.AuthenticationResult.AccessToken }));
     const a = Object.fromEntries(result.UserAttributes.map(x => [x.Name, x.Value]));
-    if (a.email_verified !== 'true' || !['buyer', 'seller'].includes(a['custom:role'])) throw error(403, 'Verify your email before signing in.');
+    if (a.email_verified !== 'true') throw error(403, 'Verify your email before signing in.');
     let user = (await store.get('PROFILE', a.sub))?.data;
     if (!user) {
-      user = { id: a.sub, name: a.name, email: a.email, phone: a.phone_number || '', role: a['custom:role'], location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString() };
-      try { await store.transact([{ Put: { Item: { pk: 'PROFILE', sk: user.id, data: user }, ConditionExpression: 'attribute_not_exists(pk)' } }, ...(user.role === 'seller' ? [{ Put: { Item: { pk: 'SELLER', sk: user.id, data: publicUser(user) } } }] : [])]); } catch (e) { if (e.name !== 'TransactionCanceledException') throw e; user = (await store.get('PROFILE', a.sub))?.data; }
+      user = { id: a.sub, name: a.name, email: a.email, phone: a.phone_number || '', role: 'seller', location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString() };
     }
+    // Migrate legacy buyer profiles on sign-in and make every account discoverable as a seller.
+    user = { ...user, role: 'seller' };
+    await store.transact([{ Put: { Item: { pk: 'PROFILE', sk: user.id, data: user } } }, { Put: { Item: { pk: 'SELLER', sk: user.id, data: publicUser(user) } } }]);
     await store.put({ pk: 'EMAIL', sk: hash(user.email.toLowerCase()), userId: user.id });
     const old = sessionKey(req); if (old) await store.delete('SESSION', old);
     const token = crypto.randomBytes(32).toString('hex'); await store.put({ pk: 'SESSION', sk: hash(token), userId: user.id, authVersion: user.authVersion || 0, expiresAt: Math.floor(Date.now() / 1000) + 28800 });
@@ -145,8 +148,7 @@ function createApp(config = {}, dependencies = {}) {
     let listing;
     if (v.productId) {
       listing = (await store.get('PRODUCT', v.productId))?.data;
-      const sellerId = req.user.role === 'seller' ? req.user.id : receiver.id;
-      if (!listing || listing.sellerId !== sellerId || !['buyer', 'seller'].includes(req.user.role) || req.user.role === receiver.role) throw error(400, 'This product is not available for this conversation.');
+      if (!listing || ![req.user.id, receiver.id].includes(listing.sellerId)) throw error(400, 'This product is not available for this conversation.');
     }
     const data = { id: crypto.randomUUID(), senderId: req.user.id, senderName: req.user.storeName || req.user.name, receiverId: receiver.id, receiverName: receiver.storeName || receiver.name, message: v.message, ...(listing ? { productId: listing.id, productName: listing.name } : {}), createdAt: new Date().toISOString() };
     await store.transact([req.user.id, receiver.id].map(id => ({ Put: { Item: { pk: `MESSAGES#${id}`, sk: `${data.createdAt}#${data.id}`, data } } }))); await activity('message.sent', req.user, { receiverId: receiver.id, receiverName: receiver.storeName || receiver.name, productId: listing?.id, productName: listing?.name }); res.status(201).json({ message: 'Message sent.' });
@@ -170,7 +172,7 @@ function createApp(config = {}, dependencies = {}) {
   app.get('/api/admin/overview', admin(), wrap(async (req, res) => {
     const [profiles, products, sellers, banners, boosts, events, requests] = await Promise.all(['PROFILE', 'PRODUCT', 'SELLER', 'BANNER', 'BOOST', 'ACTIVITY', 'PROMO_REQUEST'].map(pk => store.list(pk)));
     const now = Date.now(), activities = events.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    res.json({ adminEmail: req.admin.email, metrics: { users: profiles.length, sellers: sellers.length, buyers: profiles.filter(r => r.data.role === 'buyer').length, listings: products.length, activeListings: products.filter(r => r.data.stockCount > 0).length, messages: activities.filter(a => a.type === 'message.sent').length, activeBoosts: boosts.filter(r => Date.parse(r.data.endsAt) > now).length, activeBanners: banners.filter(r => r.data.status === 'active' && Date.parse(r.data.startsAt) <= now && Date.parse(r.data.endsAt) > now).length, pendingPromotions: requests.filter(r => r.data.status === 'pending').length }, users: profiles.map(r => r.data).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)), listings: products.map(r => r.data), banners: banners.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), boosts: boosts.map(r => r.data), promotionRequests: requests.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), activities: activities.slice(0, 200) });
+    res.json({ adminEmail: req.admin.email, metrics: { users: profiles.length, sellers: profiles.length, buyers: 0, listings: products.length, activeListings: products.filter(r => r.data.stockCount > 0).length, messages: activities.filter(a => a.type === 'message.sent').length, activeBoosts: boosts.filter(r => Date.parse(r.data.endsAt) > now).length, activeBanners: banners.filter(r => r.data.status === 'active' && Date.parse(r.data.startsAt) <= now && Date.parse(r.data.endsAt) > now).length, pendingPromotions: requests.filter(r => r.data.status === 'pending').length }, users: profiles.map(r => r.data).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)), listings: products.map(r => r.data), banners: banners.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), boosts: boosts.map(r => r.data), promotionRequests: requests.map(r => r.data).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), activities: activities.slice(0, 200) });
   }));
   app.post('/api/admin/banners', admin(), wrap(async (req, res) => {
     const v = z.object({ title: text(3, 100), subtitle: text(3, 220), imageUrl: z.string().url().max(1000), ctaLabel: text(2, 30), ctaHref: z.string().regex(/^\/[a-zA-Z0-9/?=&%_.-]*$/).max(300), placement: z.enum(['homepage', 'category']), startsAt: z.string().datetime(), endsAt: z.string().datetime(), price: z.number().nonnegative().max(10000000), sponsorName: text(2, 100) }).strict().parse(req.body);
