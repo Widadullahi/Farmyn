@@ -6,6 +6,6 @@ const nextConfig: NextConfig = {
     if (!/^https?:\/\//.test(origin)) throw new Error("API_ORIGIN must be an HTTP(S) origin");
     return [{ source: "/api/:path*", destination: `${origin.replace(/\/$/, "")}/api/:path*` }];
   },
-  async headers() { return [{ source: "/(.*)", headers: [{ key: "X-Content-Type-Options", value: "nosniff" }, { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }, { key: "X-Frame-Options", value: "DENY" }, { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" }] }]; },
+  async headers() { return [{ source: "/(.*)", headers: [{ key: "X-Content-Type-Options", value: "nosniff" }, { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }, { key: "X-Frame-Options", value: "DENY" }, { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" }] }]; },
 };
 export default nextConfig;

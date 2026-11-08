@@ -9,8 +9,9 @@ const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = requ
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const sharp = require('sharp');
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
-const publicUser = u => ({ id: u.id, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
+const publicUser = u => ({ id: u.id, username: u.username, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
 const referralCodeFor = id => hash(`farmyn-referral:${id}`).slice(0, 8).toUpperCase();
+const usernameFor = (name, id) => `${String(name || 'member').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'member'}-${hash(id).slice(0, 4)}`;
 // Behind CloudFront the socket address is an edge server shared by many viewers.
 // CloudFront stamps the viewer IP into x-farmyn-viewer-ip (overwriting any client
 // value) and adds x-farmyn-edge; trust the IP header only when that secret matches,
@@ -76,10 +77,10 @@ function createApp(config = {}, dependencies = {}) {
     if (a.email_verified !== 'true') throw error(403, 'Verify your email before signing in.');
     let user = (await store.get('PROFILE', a.sub))?.data;
     if (!user) {
-      user = { id: a.sub, name: a.name, email: a.email, phone: a.phone_number || '', role: 'seller', location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString(), referralCode: referralCodeFor(a.sub), referralCount: 0 };
+      user = { id: a.sub, username: usernameFor(a.name, a.sub), name: a.name, email: a.email, phone: a.phone_number || '', role: 'seller', location: a['custom:location'] || '', storeName: a['custom:storeName'], verified: false, emailVerified: true, joinedAt: new Date().toISOString(), referralCode: referralCodeFor(a.sub), referralCount: 0 };
     }
     // Migrate legacy buyer profiles on sign-in and make every account discoverable as a seller.
-    user = { ...user, role: 'seller', referralCode: user.referralCode || referralCodeFor(user.id), referralCount: user.referralCount || 0 };
+    user = { ...user, role: 'seller', username: user.username || usernameFor(user.name, user.id), referralCode: user.referralCode || referralCodeFor(user.id), referralCount: user.referralCount || 0 };
     await store.transact([{ Put: { Item: { pk: 'PROFILE', sk: user.id, data: user } } }, { Put: { Item: { pk: 'SELLER', sk: user.id, data: publicUser(user) } } }]);
     await store.put({ pk: 'REFERRAL_CODE', sk: user.referralCode, userId: user.id });
     const pendingReferral = !user.referredBy && await store.get('REFERRAL_PENDING', hash(user.email.toLowerCase()));

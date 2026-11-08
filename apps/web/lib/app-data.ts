@@ -2,6 +2,7 @@ export type UserRole = "buyer" | "seller";
 
 export interface User {
   id: string;
+  username?: string;
   role: UserRole;
   name: string;
   email: string;
