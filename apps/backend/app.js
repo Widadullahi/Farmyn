@@ -10,6 +10,15 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const sharp = require('sharp');
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const publicUser = u => ({ id: u.id, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
+// Behind CloudFront the socket address is an edge server shared by many viewers.
+// CloudFront stamps the viewer IP into x-farmyn-viewer-ip (overwriting any client
+// value) and adds x-farmyn-edge; trust the IP header only when that secret matches,
+// so calling API Gateway directly cannot spoof it.
+const clientIp = (req, edgeSecret) => {
+  const sent = req.get('x-farmyn-edge'), viewer = req.get('x-farmyn-viewer-ip');
+  const trusted = edgeSecret && sent && viewer && sent.length === edgeSecret.length && crypto.timingSafeEqual(Buffer.from(sent), Buffer.from(edgeSecret));
+  return (trusted ? viewer : req.socket.remoteAddress) || 'unknown';
+};
 const sessionKey = req => { const match = (req.headers.cookie || '').match(/(?:^|;\s*)farmyn_session=([a-f0-9]{64})(?:;|$)/); return match ? hash(match[1]) : null; };
 const adminSessionKey = req => { const match = (req.headers.cookie || '').match(/(?:^|;\s*)farmyn_admin=([a-f0-9]{64})(?:;|$)/); return match ? hash(match[1]) : null; };
 const verifyPassword = (password, stored) => {
@@ -40,7 +49,7 @@ function createApp(config = {}, dependencies = {}) {
   const auth = role => (req, res, next) => !req.user ? next(error(401, 'Please sign in.')) : role && req.user.role !== role ? next(error(403, 'This action is not available for your account.')) : next();
   const admin = () => (req, res, next) => !req.admin ? next(error(401, 'Super-admin sign-in required.')) : next();
   const throttle = async (req, kind, max = 10) => {
-    const ip = req.socket.remoteAddress || 'unknown';
+    const ip = clientIp(req, config.edgeSecret);
     if (!req.user) await store.limit(hash(`ingress:${kind}:${ip}`), 1000, 300);
     const identity = req.user?.id || (typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ip);
     await store.limit(hash(`${kind}:${identity}`), max, 300);

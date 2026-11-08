@@ -30,3 +30,7 @@ work/
 *.njsproj
 *.sln
 *.sw?
+
+# Deploy build output
+.aws-sam/
+.open-next/

@@ -1,0 +1,15 @@
+# Backend stack settings, shared by local deploys and CI.
+# Local: cd infra && sam build --use-container && AWS_PROFILE=farmyn sam deploy
+version = 0.1
+
+[default.build.parameters]
+use_container = true
+
+[default.deploy.parameters]
+stack_name = "farmyn"
+region = "us-east-1"
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+fail_on_empty_changeset = false
+parameter_overrides = "WebOrigin=https://farmyn.com.ng AlertEmail=farmyn.ng@gmail.com"
