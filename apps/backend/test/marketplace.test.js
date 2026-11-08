@@ -4,9 +4,11 @@ const { product, registration } = require('../validation');
 const { error, hash } = require('../utils');
 
 test('listing validation accepts marketplace fields and rejects remote images', () => {
-  const listing = { name: 'Fresh Tomatoes', category: 'Vegetables', price: 2500, stockCount: 8, unit: 'basket', minimumOrder: '1 basket', image: 'products/seller-a/550e8400-e29b-41d4-a716-446655440000.jpg', location: 'Lagos', description: 'Freshly harvested tomatoes.' };
+  const listing = { name: 'Fresh Tomatoes', category: 'Vegetables', price: 2500, stockCount: 8, unit: 'basket', minimumOrder: '1 basket', images: ['products/seller-a/550e8400-e29b-41d4-a716-446655440000.jpg'], location: 'Lagos', description: 'Freshly harvested tomatoes.' };
   assert.equal(product.safeParse(listing).success, true);
-  assert.equal(product.safeParse({ ...listing, image: 'https://example.com/photo.jpg' }).success, false);
+  assert.equal(product.safeParse({ ...listing, images: ['https://example.com/photo.jpg'] }).success, false);
+  assert.equal(product.safeParse({ ...listing, images: [] }).success, false);
+  assert.equal(product.safeParse({ ...listing, images: Array(9).fill(listing.images[0]) }).success, false);
   assert.equal(product.safeParse({ ...listing, price: -1 }).success, false);
 });
 

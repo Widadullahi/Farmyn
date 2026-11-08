@@ -1,11 +1,17 @@
 "use client";
-import { MapPin, ShieldCheck, MessageSquare } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Images, MapPin, ShieldCheck, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Product, formatNaira } from "@/lib/app-data";
 
 const ProductCard = ({ product }: { product: Product }) => {
+  const images = product.images?.length ? product.images : [product.image];
+  const [activeImage, setActiveImage] = useState(0);
+  const touchStart = useRef<number | null>(null);
+  const move = (direction: number) => setActiveImage(current => (current + direction + images.length) % images.length);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -14,13 +20,9 @@ const ProductCard = ({ product }: { product: Product }) => {
       transition={{ duration: 0.4 }}
       className="group overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:shadow-elevated"
     >
+      <Dialog onOpenChange={open => { if (!open) setActiveImage(0); }}>
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          loading="lazy"
-        />
+        <DialogTrigger asChild><button type="button" className="h-full w-full cursor-zoom-in" aria-label={`View ${images.length} photos of ${product.name}`}><img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" loading="lazy" /></button></DialogTrigger>
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center rounded-md bg-foreground/75 px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
             {product.category}
@@ -33,6 +35,7 @@ const ProductCard = ({ product }: { product: Product }) => {
           )}
           {product.featured && <span className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">Featured</span>}
         </div>
+        {images.length > 1 && <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-foreground/75 px-2.5 py-1 text-[11px] font-medium text-background"><Images className="h-3.5 w-3.5" /> {images.length}</span>}
         {!product.inStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-foreground/50 backdrop-blur-sm">
             <span className="rounded-md bg-card px-4 py-1.5 text-sm font-semibold text-foreground shadow-elevated">
@@ -41,6 +44,14 @@ const ProductCard = ({ product }: { product: Product }) => {
           </div>
         )}
       </div>
+      <DialogContent className="w-[calc(100%-1rem)] max-w-4xl border-0 bg-foreground p-2 text-background sm:p-4">
+        <DialogTitle className="sr-only">Photos of {product.name}</DialogTitle>
+        <div className="relative flex min-h-[55vh] items-center justify-center overflow-hidden rounded-lg bg-black" onTouchStart={event => { touchStart.current = event.touches[0]?.clientX ?? null; }} onTouchEnd={event => { const end = event.changedTouches[0]?.clientX; if (touchStart.current != null && end != null && Math.abs(end - touchStart.current) > 45) move(end < touchStart.current ? 1 : -1); touchStart.current = null; }}>
+          <img src={images[activeImage]} alt={`${product.name}, photo ${activeImage + 1}`} className="max-h-[68vh] w-full select-none object-contain" />
+          {images.length > 1 && <><button type="button" onClick={() => move(-1)} aria-label="Previous photo" className="absolute left-2 rounded-full bg-background/90 p-2 text-foreground shadow-lg"><ChevronLeft className="h-5 w-5" /></button><button type="button" onClick={() => move(1)} aria-label="Next photo" className="absolute right-2 rounded-full bg-background/90 p-2 text-foreground shadow-lg"><ChevronRight className="h-5 w-5" /></button><span className="absolute bottom-3 rounded-full bg-black/70 px-3 py-1 text-xs text-white">{activeImage + 1} / {images.length}</span></>}
+        </div>
+        {images.length > 1 && <div className="flex gap-2 overflow-x-auto py-2">{images.map((image, index) => <button type="button" key={`${image}-${index}`} onClick={() => setActiveImage(index)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 ${activeImage === index ? "border-primary" : "border-transparent opacity-65"}`} aria-label={`View photo ${index + 1}`}><img src={image} alt="" className="h-full w-full object-cover" /></button>)}</div>}
+      </DialogContent>
       <div className="p-4">
         <div className="mb-1 flex items-center gap-2 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
@@ -73,6 +84,7 @@ const ProductCard = ({ product }: { product: Product }) => {
           </div>
         </div>
       </div>
+      </Dialog>
     </motion.div>
   );
 };

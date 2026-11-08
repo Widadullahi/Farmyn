@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { allCategories, AppState, initialAppState, User } from "@/lib/app-data";
 type Result = { ok: boolean; message: string; user?: User };
 interface RegisterInput { name: string; email: string; phone: string; password: string; location: string; storeName?: string; referralCode?: string }
-interface ProductInput { name: string; category: string; price: number; oldPrice?: number | null; stockCount: number; unit: string; minimumOrder: string; image: string; location: string; description: string }
+interface ProductInput { name: string; category: string; price: number; oldPrice?: number | null; stockCount: number; unit: string; minimumOrder: string; images: string[]; location: string; description: string }
 interface AppContextValue extends AppState {
   currentUser: User | null; isHydrated: boolean; serviceError: string; categories: string[];
   registerUser: (input: RegisterInput) => Promise<Result>;
@@ -13,7 +13,7 @@ interface AppContextValue extends AppState {
   login: (email: string, password: string) => Promise<Result>;
   logout: () => Promise<void>;
   addProduct: (input: ProductInput) => Promise<Result>;
-  updateProduct: (id: string, input: Omit<ProductInput, "image"> & { image?: string }) => Promise<Result>;
+  updateProduct: (id: string, input: Omit<ProductInput, "images"> & { images?: string[] }) => Promise<Result>;
   uploadPhoto: (file: File) => Promise<{ image: string; preview: string }>;
   updateSellerProfile: (patch: Partial<User>) => Promise<void>;
   sendChatMessage: (id: string, message: string, productId?: string) => Promise<Result>;

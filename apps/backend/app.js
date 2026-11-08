@@ -116,12 +116,16 @@ function createApp(config = {}, dependencies = {}) {
     const people = new Map(sellers.map(row => [row.sk, row.data]));
     if (user) { people.set(user.id, user); const ids = new Set(messages.flatMap(r => [r.data.senderId, r.data.receiverId])); for (const id of ids) if (!people.has(id)) { const p = await store.get('PROFILE', id); if (p) people.set(id, publicUser(p.data)); } }
     const now = Date.now(), activeBoosts = new Set(boosts.filter(r => Date.parse(r.data.endsAt) > now).map(r => r.data.productId));
-    const listing = await Promise.all(products.map(async r => ({ ...r.data, inStock: r.data.stockCount > 0, featured: activeBoosts.has(r.data.id), sellerVerified: people.get(r.data.sellerId)?.verified === true, image: await photoUrl(r.data.image) })));
+    const listing = await Promise.all(products.map(async r => {
+      const keys = r.data.images?.length ? r.data.images : [r.data.image].filter(Boolean);
+      const images = await Promise.all(keys.map(photoUrl));
+      return { ...r.data, inStock: r.data.stockCount > 0, featured: activeBoosts.has(r.data.id), sellerVerified: people.get(r.data.sellerId)?.verified === true, images, image: images[0] || '' };
+    }));
     const activeBanners = banners.map(r => r.data).filter(b => b.status === 'active' && Date.parse(b.startsAt) <= now && Date.parse(b.endsAt) > now).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     res.json({ currentUserId: user?.id || null, users: [...people.values()], products: listing, banners: activeBanners, chatMessages: messages.map(r => r.data).sort((a, b) => a.createdAt.localeCompare(b.createdAt)) });
   }));
   app.post('/api/uploads', auth('seller'), express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '3mb' }), wrap(async (req, res) => {
-    await throttle(req, 'upload', 10); if (!Buffer.isBuffer(req.body)) throw error(400, 'Choose a JPEG, PNG or WebP photo under 3 MB.');
+    await throttle(req, 'upload', 30); if (!Buffer.isBuffer(req.body)) throw error(400, 'Choose a JPEG, PNG or WebP photo under 3 MB.');
     const bytes = req.body;
     const raster = bytes.subarray(0, 3).equals(Buffer.from([255, 216, 255])) || bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) || (bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP');
     if (!raster) throw error(400, 'Choose a valid JPEG, PNG or WebP photo.');
@@ -131,9 +135,11 @@ function createApp(config = {}, dependencies = {}) {
     res.status(201).json({ image: key, preview: await photoUrl(key) });
   }));
   app.post('/api/products', auth('seller'), wrap(async (req, res) => {
-    await throttle(req, 'product', 20); const v = product.parse(req.body); if (!v.image.startsWith(`products/${req.user.id}/`)) throw error(403, 'Upload a photo from your own account.');
-    const photo = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: v.image })); if (photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg') throw error(400, 'Upload a valid product photo first.');
-    const data = { ...v, id: crypto.randomUUID(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
+    await throttle(req, 'product', 20); const v = product.parse(req.body);
+    if (v.images.some(key => !key.startsWith(`products/${req.user.id}/`))) throw error(403, 'Upload photos from your own account.');
+    const photos = await Promise.all(v.images.map(key => s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }))));
+    if (photos.some(photo => photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg')) throw error(400, 'Upload valid product photos first.');
+    const data = { ...v, image: v.images[0], id: crypto.randomUUID(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
     await store.put({ pk: 'PRODUCT', sk: data.id, data }, 'attribute_not_exists(pk)'); await activity('listing.created', req.user, { productId: data.id, productName: data.name }); res.status(201).json({ message: 'Product published.' });
   }));
   app.patch('/api/products/:id', auth('seller'), wrap(async (req, res) => {
@@ -142,13 +148,14 @@ function createApp(config = {}, dependencies = {}) {
     const record = await store.get('PRODUCT', id);
     if (!record || record.data.sellerId !== req.user.id) throw error(404, 'Listing not found.');
     const v = productUpdate.parse(req.body);
-    if (v.image) {
-      if (!v.image.startsWith(`products/${req.user.id}/`)) throw error(403, 'Upload a photo from your own account.');
-      const photo = await s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: v.image }));
-      if (photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg') throw error(400, 'Upload a valid product photo first.');
+    if (v.images) {
+      if (v.images.some(key => !key.startsWith(`products/${req.user.id}/`))) throw error(403, 'Upload photos from your own account.');
+      const photos = await Promise.all(v.images.map(key => s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }))));
+      if (photos.some(photo => photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg')) throw error(400, 'Upload valid product photos first.');
     }
     const previous = record.data;
-    const data = { ...previous, ...v, image: v.image || previous.image, inStock: v.stockCount > 0, version: (previous.version || 0) + 1 };
+    const images = v.images || previous.images || [previous.image].filter(Boolean);
+    const data = { ...previous, ...v, images, image: images[0], inStock: v.stockCount > 0, version: (previous.version || 0) + 1 };
     if (v.oldPrice === null) delete data.oldPrice;
     await store.transact([{ Put: {
       Item: { pk: 'PRODUCT', sk: id, data },
