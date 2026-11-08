@@ -15,7 +15,9 @@ export const metadata: Metadata = {
     description: "Browse farm products and chat directly with sellers.",
     type: "website",
   },
-  icons: { icon: "/farmyn-icon.svg" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Farmyn", statusBarStyle: "default" },
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/farmyn-pwa-192.png", sizes: "192x192", type: "image/png" }], apple: "/farmyn-pwa-192.png" },
 };
 
 export const viewport: Viewport = { themeColor: "#166534" };

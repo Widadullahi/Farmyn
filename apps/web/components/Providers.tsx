@@ -6,6 +6,7 @@ import { AppProvider } from "@/context/AppContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import PWAInstall from "@/components/PWAInstall";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -16,6 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <Toaster />
           <Sonner />
           {children}
+          <PWAInstall />
         </TooltipProvider>
       </AppProvider>
     </QueryClientProvider>

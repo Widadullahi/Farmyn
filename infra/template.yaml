@@ -97,15 +97,53 @@ Resources:
       AutoVerifiedAttributes: [email]
       VerificationMessageTemplate:
         DefaultEmailOption: CONFIRM_WITH_CODE
-        EmailSubject: Verify your Farmyn account
-        EmailMessage: |
-          Welcome to Farmyn!
-
-          Use this verification code to confirm your email address: {####}
-
-          This code was requested for a Farmyn account. If you did not create an account, you can safely ignore this email.
-
-          Farmyn — buy and sell farm products directly.
+        EmailSubject: Your Farmyn verification code
+        EmailMessage: !Sub |
+          <!doctype html>
+          <html lang="en">
+            <body style="margin:0;padding:0;background:#f4f7f2;font-family:Arial,sans-serif;color:#17382d;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7f2;padding:32px 12px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #dce7db;border-radius:24px;overflow:hidden;box-shadow:0 12px 35px rgba(23,56,45,.10);">
+                      <tr>
+                        <td style="background:#165c3a;padding:30px 36px;text-align:center;">
+                          <img src="${WebOrigin}/farmyn-pwa-192.png" width="64" height="64" alt="Farmyn" style="display:block;margin:0 auto 12px;border-radius:16px;background:#ffffff;" />
+                          <div style="font-size:30px;line-height:1;font-weight:800;color:#ffffff;">Farm<span style="color:#9bd36b;">yn</span></div>
+                          <div style="margin-top:8px;font-size:11px;letter-spacing:2px;font-weight:700;color:#d7ead8;">FRESH FROM THE FARM</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:38px 36px 18px;text-align:center;">
+                          <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#eef7e9;color:#3f7e2a;font-size:11px;font-weight:800;letter-spacing:1.4px;">EMAIL VERIFICATION</div>
+                          <h1 style="margin:20px 0 10px;font-size:28px;line-height:1.25;color:#17382d;">Welcome to Farmyn</h1>
+                          <p style="margin:0 auto;max-width:460px;font-size:15px;line-height:1.7;color:#5d7169;">Use the verification code below to confirm your email and finish setting up your Farmyn account.</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 36px 24px;text-align:center;">
+                          <div style="margin:0 auto;max-width:360px;border:2px dashed #e0a33c;border-radius:18px;background:#fff8e9;padding:24px 16px;">
+                            <div style="font-size:11px;font-weight:800;letter-spacing:1.6px;color:#9b681d;">YOUR VERIFICATION CODE</div>
+                            <div style="margin-top:10px;font-family:Courier New,monospace;font-size:38px;line-height:1;font-weight:800;letter-spacing:9px;color:#165c3a;">{####}</div>
+                          </div>
+                          <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#7b8b84;">For your security, do not share this code with anyone.</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:0 36px 34px;text-align:center;">
+                          <a href="${WebOrigin}/register" style="display:inline-block;background:#e6a43a;color:#17382d;text-decoration:none;font-size:14px;font-weight:800;padding:14px 24px;border-radius:12px;">Enter code on Farmyn</a>
+                          <p style="margin:22px auto 0;max-width:470px;font-size:13px;line-height:1.7;color:#6d7e77;">If you did not create a Farmyn account, you can safely ignore this message. Farmyn will never ask you to send this code by chat or phone.</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="background:#eef4ed;padding:20px 30px;text-align:center;font-size:11px;line-height:1.6;color:#718078;">Farmyn Nigeria · Buy and sell farm products directly<br />This is an automated account-security message.</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+          </html>
       EmailConfiguration: !If
         - UseCustomCognitoEmail
         - EmailSendingAccount: DEVELOPER

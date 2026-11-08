@@ -9,6 +9,7 @@ import { ArrowUpRight, ChevronRight, Home, Info, LayoutDashboard, Leaf, LogOut, 
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
+import { InstallAppButton } from "@/components/PWAInstall";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -33,7 +34,7 @@ const Navbar = () => {
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
   useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 1024px)");
+    const desktop = window.matchMedia("(min-width: 1280px)");
     const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
     desktop.addEventListener("change", closeOnDesktop);
     return () => desktop.removeEventListener("change", closeOnDesktop);
@@ -43,18 +44,19 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-primary/10 bg-background/95 shadow-[0_2px_14px_rgba(20,50,35,0.05)] backdrop-blur-xl">
-      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-[76px] lg:px-8">
+      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 xl:h-[76px] xl:px-8">
         <Link href="/" aria-label="Farmyn home" className="flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4">{brand}</Link>
-        <nav aria-label="Main navigation" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
           {links.filter(link => !["Messages", "Dashboard"].includes(link.label)).map(link => { const active = pathname === link.href || (link.href === "/marketplace" && pathname.startsWith("/marketplace")); return <Link key={link.href} href={link.href} aria-current={active ? "page" : undefined} className={cn("relative rounded-lg px-3 py-2 text-[13px] font-medium transition-colors", active ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground")}>{link.label}{active && <span className="absolute inset-x-3 -bottom-[15px] h-0.5 rounded-full bg-primary" />}</Link>; })}
         </nav>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {currentUser && <Link href="/chat" aria-label="Open messages" className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-primary/10 bg-card text-foreground transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><MessageSquare className="h-[19px] w-[19px]" /></Link>}
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 xl:flex">
+            <InstallAppButton />
             {currentUser ? <><Link href={dashboard} className="flex h-10 items-center gap-2 rounded-lg bg-accent/70 px-3 text-xs font-medium text-primary"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[9px] text-white">{displayName.slice(0, 2).toUpperCase()}</span><span className="max-w-[100px] truncate">{displayName}</span></Link><Button variant="ghost" size="icon" aria-label="Log out" onClick={logout}><LogOut className="h-4 w-4" /></Button></> : <><Button asChild variant="ghost" size="sm"><Link href="/login">Log in</Link></Button><Button asChild className="rounded-lg text-xs"><Link href="/register">Get started <ArrowUpRight className="h-4 w-4" /></Link></Button></>}
           </div>
           <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-            <Dialog.Trigger asChild><button aria-label="Open navigation menu" className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:hidden"><Menu className="h-5 w-5" /></button></Dialog.Trigger>
+            <Dialog.Trigger asChild><button aria-label="Open navigation menu" className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 xl:hidden"><Menu className="h-5 w-5" /></button></Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/35 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 motion-reduce:animate-none" />
               <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-[calc(100%_-_20px)] max-w-sm flex-col border-l border-border bg-background shadow-2xl outline-none duration-200 data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right motion-reduce:animate-none">
@@ -70,6 +72,7 @@ const Navbar = () => {
                     const active = pathname === link.href;
                     return <Link key={link.href} href={link.href} aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)} className={cn("group flex min-h-16 items-center gap-3 rounded-xl border p-3 transition-colors", active ? "border-primary/10 bg-accent/80" : "border-transparent hover:bg-accent/50")}><span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", active ? "bg-primary text-white" : "border border-border bg-card text-muted-foreground")}><link.icon className="h-[18px] w-[18px]" /></span><span className="min-w-0 flex-1"><span className={cn("block text-sm font-semibold", active ? "text-primary" : "text-foreground")}>{link.label}</span><span className="mt-0.5 block text-[11px] text-muted-foreground">{link.description}</span></span><ChevronRight className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground/50")} /></Link>;
                   })}</nav>
+                  <div className="mt-2"><InstallAppButton mobile /></div>
                   {!currentUser && <Link href="/register" onClick={() => setMobileOpen(false)} className="mt-5 flex items-center gap-3 rounded-xl border border-primary/10 bg-accent/40 p-4"><span className="rounded-xl bg-card p-2.5 text-primary"><Store className="h-5 w-5" /></span><span className="flex-1"><span className="block text-sm font-semibold text-foreground">Grow with Farmyn</span><span className="mt-1 block text-[11px] text-muted-foreground">Bring your farm to more buyers.</span></span><ArrowUpRight className="h-4 w-4 text-primary" /></Link>}
                 </div>
                 <div className="shrink-0 space-y-4 border-t border-border bg-card px-5 pt-5 pb-[max(20px,env(safe-area-inset-bottom))]">
