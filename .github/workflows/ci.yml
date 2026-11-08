@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  # Not secrets: AWS only lets GitHub assume these from refs/heads/main (infra/ci).
+  DEPLOY_ROLE_ARN: arn:aws:iam::136889124549:role/FarmynGitHubDeploy
+  CFN_ROLE_ARN: arn:aws:iam::136889124549:role/FarmynCloudFormationExecution
+  WEB_DOMAIN: farmyn.com.ng
+  WEB_CERT_ARN: arn:aws:acm:us-east-1:136889124549:certificate/72fe6d5f-3979-42c4-a321-adf615b14be0
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Backend tests
+        run: npm test
+        working-directory: apps/backend
+      - name: Web lint
+        run: npx eslint .
+        working-directory: apps/web
+      - name: Web typecheck
+        run: npx next typegen && npx tsc --noEmit -p .
+        working-directory: apps/web
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - name: Validate templates
+        run: |
+          sam validate --lint -t infra/template.yaml --region $AWS_REGION
+          sam validate -t infra/web/template.yaml --region $AWS_REGION
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy backend
+        working-directory: infra
+        run: |
+          sam build --use-container
+          sam deploy --role-arn "$CFN_ROLE_ARN"
+      - name: Deploy web
+        run: infra/web/deploy.sh "$WEB_DOMAIN" "$WEB_CERT_ARN"
+      - name: Smoke test
+        run: |
+          curl -fsS https://farmyn.com.ng/api/health
+          curl -fsS -o /dev/null https://farmyn.com.ng/

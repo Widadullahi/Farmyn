@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build the Next.js app with OpenNext and deploy the farmyn-web stack.
 # Usage: AWS_PROFILE=farmyn infra/web/deploy.sh [DomainName CertificateArn]
+# CI sets CFN_ROLE_ARN so CloudFormation runs as the execution role (infra/ci).
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$(cd ../.. && pwd)
@@ -16,7 +17,7 @@ API_DOMAIN=${API_ORIGIN#https://}
 (cd "$ROOT/apps/web" && rm -rf .open-next && API_ORIGIN=$API_ORIGIN npx open-next build)
 
 sam deploy --template-file template.yaml --stack-name $STACK --region $REGION \
-  --resolve-s3 --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset \
+  --resolve-s3 --capabilities CAPABILITY_IAM ${CFN_ROLE_ARN:+--role-arn $CFN_ROLE_ARN} --no-confirm-changeset --no-fail-on-empty-changeset \
   --parameter-overrides ApiDomain=$API_DOMAIN ${DOMAIN:+DomainName=$DOMAIN CertificateArn=$CERT}
 
 out() { aws cloudformation describe-stacks --stack-name $STACK --region $REGION \
