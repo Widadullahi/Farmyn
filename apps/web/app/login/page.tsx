@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApp } from "@/context/AppContext";
+import { emailInputProps, isValidEmail, normalizeEmail } from "@/lib/email";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,8 +23,9 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
+    if (!isValidEmail(email)) { toast.error("Enter a valid email address."); return; }
     setBusy(true);
-    const result = await login(email, password);
+    const result = await login(normalizeEmail(email), password);
     setBusy(false);
     if (!result.ok) {
       toast.error(result.message);
@@ -53,7 +55,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-medium">Email address</Label>
-              <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <Input id="email" {...emailInputProps} value={email} onBlur={() => setEmail(normalizeEmail(email))} onChange={(event) => setEmail(event.target.value)} required />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-xs font-medium">Password</Label>

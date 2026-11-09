@@ -1,7 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const crypto = require('node:crypto');
-const { z, text, registration, product, productUpdate } = require('./validation');
+const { z, text, email, registration, product, productUpdate } = require('./validation');
 const { error, hash } = require('./utils');
 const { Store } = require('./store');
 const { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GetUserCommand, ForgotPasswordCommand, ConfirmForgotPasswordCommand, ResendConfirmationCodeCommand } = require('@aws-sdk/client-cognito-identity-provider');
@@ -57,7 +57,6 @@ function createApp(config = {}, dependencies = {}) {
     const identity = req.user?.id || (typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ip);
     await store.limit(hash(`${kind}:${identity}`), max, 300);
   };
-  const email = z.string().email().max(254).transform(v => v.toLowerCase());
   const activity = async (type, actor, details = {}) => { const createdAt = new Date().toISOString(), id = crypto.randomUUID(); await store.put({ pk: 'ACTIVITY', sk: `${createdAt}#${id}`, data: { id, type, actorId: actor?.id, actorName: actor?.storeName || actor?.name || actor?.email || 'System', createdAt, ...details } }); };
   app.post('/api/auth/register', wrap(async (req, res) => {
     await throttle(req, 'register', 5); const v = registration.parse(req.body);

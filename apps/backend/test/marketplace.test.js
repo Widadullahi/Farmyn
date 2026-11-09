@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { product, registration } = require('../validation');
+const { email, product, registration } = require('../validation');
 const { error, hash } = require('../utils');
 
 test('listing validation accepts marketplace fields and rejects remote images', () => {
@@ -18,6 +18,13 @@ test('registration creates one account type without a buyer or seller choice', (
   assert.equal(registration.safeParse({ ...account, referralCode: 'GARRI123' }).success, true);
   assert.equal(registration.safeParse({ ...account, referralCode: 'short' }).success, false);
   assert.equal(registration.safeParse({ ...account, role: 'buyer' }).success, false);
+});
+
+test('email validation normalizes real addresses and rejects scripts or malformed domains', () => {
+  assert.equal(email.parse('  Member@Example.COM  '), 'member@example.com');
+  for (const value of ['<script>@example.com', 'member@example', 'member..name@example.com', 'member @example.com', 'member@example.com<script>']) {
+    assert.equal(email.safeParse(value).success, false, value);
+  }
 });
 
 test('shared API helpers create status errors and stable hashes', () => {
