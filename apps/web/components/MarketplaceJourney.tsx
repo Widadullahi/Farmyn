@@ -14,10 +14,15 @@ const slides = [
 export default function MarketplaceJourney() {
   const section = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
+  const scrollJourney = useRef(false);
 
   useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
     const update = () => {
       if (!section.current) return;
+      const enabled = desktop.matches;
+      scrollJourney.current = enabled;
+      if (!enabled) return;
       const start = section.current.offsetTop;
       const range = Math.max(1, section.current.offsetHeight - window.innerHeight);
       const progress = Math.max(0, Math.min(0.999, (window.scrollY - start) / range));
@@ -26,23 +31,25 @@ export default function MarketplaceJourney() {
     update();
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
-    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+    desktop.addEventListener("change", update);
+    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); desktop.removeEventListener("change", update); };
   }, []);
 
   const go = (index: number) => {
     if (!section.current) return;
     const target = Math.max(0, Math.min(slides.length - 1, index));
+    if (!scrollJourney.current) { setActive(target); return; }
     const range = section.current.offsetHeight - window.innerHeight;
     window.scrollTo({ top: section.current.offsetTop + (range * target) / (slides.length - 1), behavior: "smooth" });
   };
   const slide = slides[active];
 
-  return <section ref={section} className="relative h-[400vh] border-y bg-[#f2f3eb]" aria-label="How Farmyn works">
-    <div className="sticky top-0 flex min-h-[680px] h-screen items-center overflow-hidden py-12">
+  return <section ref={section} className="relative isolate border-y bg-[#f2f3eb] py-16 lg:h-[400vh] lg:py-0" aria-label="How Farmyn works">
+    <div className="relative flex items-center lg:sticky lg:top-0 lg:h-screen lg:min-h-[600px] lg:overflow-hidden lg:py-10">
       <div className="container">
         <div className="mb-7 flex items-end justify-between gap-6"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">The Farmyn marketplace journey</p><h2 className="mt-2 max-w-2xl text-3xl font-bold sm:text-4xl">One account. Every side of the market.</h2></div><p className="font-display text-xl font-bold text-primary"><span className="text-3xl">0{active + 1}</span> / 04</p></div>
         <div className="grid items-center gap-8 lg:grid-cols-[1.15fr_.85fr] lg:gap-14">
-          <div className="relative h-[42vh] min-h-[300px] overflow-hidden rounded-[1.75rem] bg-primary shadow-2xl sm:h-[50vh]">
+          <div className="relative h-[280px] overflow-hidden rounded-[1.75rem] bg-primary shadow-2xl sm:h-[380px] lg:h-[50vh] lg:min-h-[300px]">
             {slides.map((item, index) => <img key={item.image} src={item.image} alt="" className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${index === active ? "scale-100 opacity-100" : "scale-105 opacity-0"}`} />)}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" /><p className="absolute bottom-6 left-6 rounded-full bg-white/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur">{slide.label}</p>
           </div>
