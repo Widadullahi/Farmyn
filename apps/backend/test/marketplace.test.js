@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { email, product, registration } = require('../validation');
+const { email, phone, product, registration } = require('../validation');
 const { error, hash } = require('../utils');
 
 test('listing validation accepts marketplace fields and rejects remote images', () => {
@@ -24,6 +24,14 @@ test('email validation normalizes real addresses and rejects scripts or malforme
   assert.equal(email.parse('  Member@Example.COM  '), 'member@example.com');
   for (const value of ['<script>@example.com', 'member@example', 'member..name@example.com', 'member @example.com', 'member@example.com<script>']) {
     assert.equal(email.safeParse(value).success, false, value);
+  }
+});
+
+test('phone validation accepts Nigerian mobile formats and rejects unsafe or incomplete values', () => {
+  assert.equal(phone.parse('0801 234 5678'), '+2348012345678');
+  assert.equal(phone.parse('2349012345678'), '+2349012345678');
+  for (const value of ['0801234', '+2346012345678', '<script>08012345678', '0801234567a']) {
+    assert.equal(phone.safeParse(value).success, false, value);
   }
 });
 
