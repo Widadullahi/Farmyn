@@ -264,7 +264,7 @@ Resources:
               Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:DeleteItem, dynamodb:UpdateItem, dynamodb:Query, dynamodb:TransactWriteItems]
               Resource: !GetAtt Data.Arn
             - Effect: Allow
-              Action: [s3:GetObject, s3:PutObject]
+              Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
               Resource: !Sub '${Photos.Arn}/products/*'
             - Effect: Allow
               Action: secretsmanager:GetSecretValue

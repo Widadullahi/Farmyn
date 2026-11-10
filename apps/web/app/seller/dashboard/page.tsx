@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ImageIcon, MessageSquare, Package, Pencil, Plus, Rocket, UploadCloud, X } from "lucide-react";
+import { ImageIcon, MessageSquare, Package, Pencil, Plus, Rocket, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { formatNaira, marketplaceCategories, Product } from "@/lib/app-data";
 
 export default function SellerDashboardPage() {
-  const { currentUser, products, addProduct, updateProduct, uploadPhoto } = useApp();
+  const { currentUser, products, addProduct, updateProduct, deleteProduct, uploadPhoto } = useApp();
   const [form, setForm] = useState({ name: "", category: marketplaceCategories[0] as string, price: "", stockCount: "", unit: "", minimumOrder: "", description: "" });
   const [photos, setPhotos] = useState<{ image: string; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -22,7 +23,11 @@ export default function SellerDashboardPage() {
   const [promoBusy, setPromoBusy] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ name: "", category: "", price: "", stockCount: "", unit: "", minimumOrder: "", description: "" });
+  const [editPhotos, setEditPhotos] = useState<{ image: string; preview: string }[]>([]);
+  const [editUploading, setEditUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<Product | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   if (!currentUser) return <><Navbar /><main className="container min-h-[65vh] py-20 text-center"><h1 className="text-3xl font-bold">Your listings</h1><p className="mt-3 text-muted-foreground">Sign in to publish and manage products.</p><Button asChild className="mt-6"><Link href="/login">Log in</Link></Button></main><Footer /></>;
   const mine = products.filter(product => product.sellerId === currentUser.id);
   const update = (key: string, value: string) => setForm(previous => ({ ...previous, [key]: value }));
@@ -47,16 +52,43 @@ export default function SellerDashboardPage() {
   const startEditing = (product: Product) => {
     setEditing(product);
     setEditForm({ name: product.name, category: product.category, price: String(product.price), stockCount: String(product.stockCount), unit: product.unit, minimumOrder: product.minimumOrder, description: product.description });
+    setEditPhotos((product.imageKeys || []).map((image, index) => ({ image, preview: product.images?.[index] || product.image })));
+  };
+  const uploadEditPhotos = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const available = 8 - editPhotos.length;
+    const selected = Array.from(files).slice(0, available);
+    if (files.length > available) toast.error(`You can add up to 8 photos. ${available} slot${available === 1 ? " is" : "s are"} available.`);
+    const invalid = selected.find(file => !["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024);
+    if (invalid) return toast.error("Each photo must be a JPEG, PNG or WebP under 3 MB.");
+    setEditUploading(true);
+    try {
+      const uploaded: { image: string; preview: string }[] = [];
+      for (const file of selected) uploaded.push(await uploadPhoto(file));
+      setEditPhotos(previous => [...previous, ...uploaded]);
+      toast.success(`${uploaded.length} photo${uploaded.length === 1 ? "" : "s"} uploaded.`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Upload failed."); }
+    finally { setEditUploading(false); }
   };
   const saveListing = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!editing) return;
+    if (!editPhotos.length) return toast.error("Keep at least one product photo.");
     setSaving(true);
-    const result = await updateProduct(editing.id, { ...editForm, location: editing.location, price: Number(editForm.price), stockCount: Number(editForm.stockCount) });
+    const result = await updateProduct(editing.id, { ...editForm, images: editPhotos.map(photo => photo.image), location: editing.location, price: Number(editForm.price), stockCount: Number(editForm.stockCount) });
     setSaving(false);
     if (!result.ok) return toast.error(result.message);
     toast.success(result.message);
     setEditing(null);
+  };
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    const result = await deleteProduct(deleting.id);
+    setDeleteBusy(false);
+    if (!result.ok) return toast.error(result.message);
+    toast.success(result.message);
+    setDeleting(null);
   };
   return <><Navbar /><main className="container py-10">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Seller workspace</p><h1 className="mt-2 text-3xl font-bold">Your listings</h1><p className="mt-2 text-sm text-muted-foreground">Publish products, promote them, and reply to buyers directly.</p></div><Button asChild variant="outline"><Link href="/chat"><MessageSquare className="h-4 w-4" /> Messages</Link></Button></div>
@@ -68,5 +100,24 @@ export default function SellerDashboardPage() {
       <section className="min-w-0 rounded-2xl border bg-card p-4 sm:p-6"><div className="flex items-center justify-between"><div><h2 className="flex items-center gap-2 font-semibold"><Package className="h-4 w-4" /> Live listings</h2><p className="mt-1 text-xs text-muted-foreground">Update your stock whenever new items arrive.</p></div><span className="rounded-full bg-muted px-2.5 py-1 text-sm text-muted-foreground">{mine.length}</span></div><div className="mt-5 overflow-x-auto rounded-xl border"><table className="w-full min-w-[650px] text-left text-sm"><thead className="border-b bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Listing</th><th className="px-4 py-3 font-medium">Price</th><th className="px-4 py-3 font-medium">Stock</th><th className="px-4 py-3 text-right font-medium">Actions</th></tr></thead><tbody className="divide-y">{mine.length === 0 ? <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No live listings yet. Your published products will appear in this table.</td></tr> : mine.map(product => <tr key={product.id} className="transition hover:bg-muted/30"><td className="px-4 py-3"><div className="flex items-center gap-3"><img src={product.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /><div className="min-w-0"><p className="max-w-48 truncate font-semibold">{product.name}</p><p className="text-xs text-muted-foreground">{product.category}</p></div></div></td><td className="whitespace-nowrap px-4 py-3 font-medium text-primary">{formatNaira(product.price)}<span className="block text-xs font-normal text-muted-foreground">per {product.unit}</span></td><td className="px-4 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${product.stockCount > 0 ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"}`}>{product.stockCount > 0 ? `${product.stockCount} available` : "Out of stock"}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => startEditing(product)}><Pencil className="h-3.5 w-3.5" /> Edit</Button><Button size="sm" variant="outline" disabled={Boolean(promoBusy) || product.featured} onClick={() => requestPromotion("boost", product.id)}><Rocket className="h-3.5 w-3.5" /> {product.featured ? "Boosted" : "Boost"}</Button></div></td></tr>)}</tbody></table></div></section>
     </div>
     <section className="mt-8"><div className="mb-5"><p className="text-xs font-semibold uppercase tracking-widest text-primary">Promotion options</p><h2 className="mt-2 text-2xl font-bold">Get more buyers</h2><p className="mt-2 text-sm text-muted-foreground">Choose one of three ways to increase your visibility on Farmyn.</p></div><div className="grid gap-5 md:grid-cols-3"><article className="rounded-2xl border bg-card p-6"><Rocket className="h-6 w-6 text-primary" /><h3 className="mt-4 font-semibold">Listing boost · ₦2,000</h3><p className="mt-2 text-sm text-muted-foreground">Push one product higher in marketplace results so more buyers see it.</p><Button asChild className="mt-5" variant="outline"><Link href="#live-listings">{mine.length ? "Choose a listing" : "Publish a listing first"}</Link></Button></article><article className="rounded-2xl border bg-card p-6"><ImageIcon className="h-6 w-6 text-primary" /><h3 className="mt-4 font-semibold">Category banner · ₦5,000</h3><p className="mt-2 text-sm text-muted-foreground">Seven days above marketplace listings. Farmyn schedules approved artwork.</p><Button className="mt-5" variant="outline" disabled={Boolean(promoBusy)} onClick={() => requestPromotion("category-banner")}>Request category banner</Button></article><article className="rounded-2xl border bg-card p-6"><ImageIcon className="h-6 w-6 text-primary" /><h3 className="mt-4 font-semibold">Homepage banner · ₦10,000</h3><p className="mt-2 text-sm text-muted-foreground">Seven days on the Farmyn homepage with a direct call to action.</p><Button className="mt-5" variant="outline" disabled={Boolean(promoBusy)} onClick={() => requestPromotion("homepage-banner")}>Request homepage banner</Button></article></div></section>
-  </main><Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl"><form onSubmit={saveListing}><DialogHeader><DialogTitle>Edit listing</DialogTitle><DialogDescription>Update the stock when new items arrive, or change the price and listing details.</DialogDescription></DialogHeader><div className="grid gap-4 py-5"><Input required minLength={3} placeholder="Product name" value={editForm.name} onChange={e => setEditForm(previous => ({ ...previous, name: e.target.value }))} /><select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={editForm.category} onChange={e => setEditForm(previous => ({ ...previous, category: e.target.value }))}>{marketplaceCategories.map(category => <option key={category}>{category}</option>)}</select><div className="grid grid-cols-2 gap-3"><div><label className="mb-1.5 block text-xs font-medium text-muted-foreground">Price (₦)</label><Input required type="number" min="1" value={editForm.price} onChange={e => setEditForm(previous => ({ ...previous, price: e.target.value }))} /></div><div><label className="mb-1.5 block text-xs font-medium text-muted-foreground">Available stock</label><Input required type="number" min="0" value={editForm.stockCount} onChange={e => setEditForm(previous => ({ ...previous, stockCount: e.target.value }))} /></div></div><div className="grid grid-cols-2 gap-3"><Input required placeholder="Unit, e.g. bag" value={editForm.unit} onChange={e => setEditForm(previous => ({ ...previous, unit: e.target.value }))} /><Input required placeholder="Minimum quantity" value={editForm.minimumOrder} onChange={e => setEditForm(previous => ({ ...previous, minimumOrder: e.target.value }))} /></div><Textarea required minLength={10} placeholder="Describe the product" value={editForm.description} onChange={e => setEditForm(previous => ({ ...previous, description: e.target.value }))} /></div><DialogFooter><Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button></DialogFooter></form></DialogContent></Dialog><Footer /></>;
+  </main>
+  <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving && !editUploading) setEditing(null); }}>
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl"><form onSubmit={saveListing}>
+      <DialogHeader><DialogTitle>Edit listing</DialogTitle><DialogDescription>Update product details, stock, and photos. The first photo is the cover.</DialogDescription></DialogHeader>
+      <div className="grid gap-4 py-5">
+        <Input required minLength={3} placeholder="Product name" value={editForm.name} onChange={e => setEditForm(previous => ({ ...previous, name: e.target.value }))} />
+        <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={editForm.category} onChange={e => setEditForm(previous => ({ ...previous, category: e.target.value }))}>{marketplaceCategories.map(category => <option key={category}>{category}</option>)}</select>
+        <div className="grid grid-cols-2 gap-3"><div><label className="mb-1.5 block text-xs font-medium text-muted-foreground">Price (₦)</label><Input required type="number" min="1" value={editForm.price} onChange={e => setEditForm(previous => ({ ...previous, price: e.target.value }))} /></div><div><label className="mb-1.5 block text-xs font-medium text-muted-foreground">Available stock</label><Input required type="number" min="0" value={editForm.stockCount} onChange={e => setEditForm(previous => ({ ...previous, stockCount: e.target.value }))} /></div></div>
+        <div className="grid grid-cols-2 gap-3"><Input required placeholder="Unit, e.g. bag" value={editForm.unit} onChange={e => setEditForm(previous => ({ ...previous, unit: e.target.value }))} /><Input required placeholder="Minimum quantity" value={editForm.minimumOrder} onChange={e => setEditForm(previous => ({ ...previous, minimumOrder: e.target.value }))} /></div>
+        <Textarea required minLength={10} placeholder="Describe the product" value={editForm.description} onChange={e => setEditForm(previous => ({ ...previous, description: e.target.value }))} />
+        <div><label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-sm font-medium text-primary"><UploadCloud className="h-4 w-4" />{editUploading ? "Uploading…" : "Add replacement photos"}<Input className="sr-only" type="file" multiple disabled={editUploading || editPhotos.length >= 8} accept="image/jpeg,image/png,image/webp" onChange={e => { void uploadEditPhotos(e.target.files); e.currentTarget.value = ""; }} /></label></div>
+        {editPhotos.length > 0 && <div className="grid grid-cols-4 gap-2">{editPhotos.map((photo, index) => <div key={photo.image} className="relative aspect-square overflow-hidden rounded-lg border"><img src={photo.preview} alt={`Product photo ${index + 1}`} className="h-full w-full object-cover" />{index === 0 && <span className="absolute bottom-1 left-1 rounded bg-foreground/80 px-1.5 py-0.5 text-[9px] font-semibold text-background">Cover</span>}<button type="button" aria-label={`Remove photo ${index + 1}`} onClick={() => setEditPhotos(previous => previous.filter((_, photoIndex) => photoIndex !== index))} className="absolute right-1 top-1 rounded-full bg-background/90 p-1 shadow"><X className="h-3 w-3" /></button></div>)}</div>}
+      </div>
+      <DialogFooter className="sm:justify-between"><Button type="button" variant="destructive" disabled={saving || editUploading} onClick={() => { setDeleting(editing); setEditing(null); }}><Trash2 className="h-4 w-4" /> Delete listing</Button><div className="flex gap-2"><Button type="button" variant="outline" disabled={saving || editUploading} onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" disabled={saving || editUploading}>{saving ? "Saving…" : "Save changes"}</Button></div></DialogFooter>
+    </form></DialogContent>
+  </Dialog>
+  <AlertDialog open={Boolean(deleting)} onOpenChange={open => { if (!open && !deleteBusy) setDeleting(null); }}>
+    <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {deleting?.name}?</AlertDialogTitle><AlertDialogDescription>This permanently removes the listing and its product photos from Farmyn. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={deleteBusy}>Cancel</AlertDialogCancel><AlertDialogAction disabled={deleteBusy} onClick={event => { event.preventDefault(); void confirmDelete(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deleteBusy ? "Deleting…" : "Delete listing"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+  </AlertDialog>
+  <Footer /></>;
 }

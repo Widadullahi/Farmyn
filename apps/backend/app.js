@@ -5,7 +5,7 @@ const { z, text, email, registration, product, productUpdate, uploadRequest } = 
 const { error, hash } = require('./utils');
 const { Store } = require('./store');
 const { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GetUserCommand, ForgotPasswordCommand, ConfirmForgotPasswordCommand, ResendConfirmationCodeCommand } = require('@aws-sdk/client-cognito-identity-provider');
-const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const publicUser = u => ({ id: u.id, username: u.username, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
@@ -119,7 +119,7 @@ function createApp(config = {}, dependencies = {}) {
     const listing = await Promise.all(products.map(async r => {
       const keys = r.data.images?.length ? r.data.images : [r.data.image].filter(Boolean);
       const images = await Promise.all(keys.map(photoUrl));
-      return { ...r.data, inStock: r.data.stockCount > 0, featured: activeBoosts.has(r.data.id), sellerVerified: people.get(r.data.sellerId)?.verified === true, images, image: images[0] || '' };
+      return { ...r.data, imageKeys: keys, inStock: r.data.stockCount > 0, featured: activeBoosts.has(r.data.id), sellerVerified: people.get(r.data.sellerId)?.verified === true, images, image: images[0] || '' };
     }));
     const activeBanners = banners.map(r => r.data).filter(b => b.status === 'active' && Date.parse(b.startsAt) <= now && Date.parse(b.endsAt) > now).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     res.json({ currentUserId: user?.id || null, users: [...people.values()], products: listing, banners: activeBanners, chatMessages: messages.map(r => r.data).sort((a, b) => a.createdAt.localeCompare(b.createdAt)) });
@@ -152,7 +152,9 @@ function createApp(config = {}, dependencies = {}) {
       if (photos.some(photo => photo.Metadata?.owner !== req.user.id || !['image/jpeg', 'image/png', 'image/webp'].includes(photo.ContentType) || !photo.ContentLength || photo.ContentLength > 3 * 1024 * 1024)) throw error(400, 'Upload valid product photos first.');
     }
     const previous = record.data;
-    const images = v.images || previous.images || [previous.image].filter(Boolean);
+    const previousImages = previous.images?.length ? previous.images : [previous.image].filter(Boolean);
+    const images = v.images || previousImages;
+    const removedImages = previousImages.filter(key => !images.includes(key));
     const data = { ...previous, ...v, images, image: images[0], inStock: v.stockCount > 0, version: (previous.version || 0) + 1 };
     if (v.oldPrice === null) delete data.oldPrice;
     await store.transact([{ Put: {
@@ -161,8 +163,21 @@ function createApp(config = {}, dependencies = {}) {
       ExpressionAttributeNames: { '#d': 'data' },
       ExpressionAttributeValues: { ':seller': req.user.id, ':stock': previous.stockCount, ':price': previous.price, ...(previous.version === undefined ? {} : { ':version': previous.version }) },
     } }]);
+    if (removedImages.length) await s3.send(new DeleteObjectsCommand({ Bucket: config.bucket, Delete: { Objects: removedImages.map(Key => ({ Key })), Quiet: true } }));
     await activity('listing.updated', req.user, { productId: data.id, productName: data.name });
     res.json({ message: 'Listing updated.' });
+  }));
+  app.delete('/api/products/:id', auth('seller'), wrap(async (req, res) => {
+    await throttle(req, 'product', 20);
+    const id = text(1, 100).parse(req.params.id);
+    const record = await store.get('PRODUCT', id);
+    if (!record || record.data.sellerId !== req.user.id) throw error(404, 'Listing not found.');
+    const keys = record.data.images?.length ? record.data.images : [record.data.image].filter(Boolean);
+    if (keys.length) await s3.send(new DeleteObjectsCommand({ Bucket: config.bucket, Delete: { Objects: keys.map(Key => ({ Key })), Quiet: true } }));
+    await store.delete('PRODUCT', id);
+    await store.delete('BOOST', id);
+    await activity('listing.deleted', req.user, { productId: id, productName: record.data.name });
+    res.json({ message: 'Listing deleted.' });
   }));
   app.patch('/api/profile', auth('seller'), wrap(async (req, res) => {
     const patch = z.object({ storeName: text(2, 100), location: text(2, 100), bio: z.string().trim().max(2000) }).strict().parse(req.body), data = { ...req.user, ...patch };

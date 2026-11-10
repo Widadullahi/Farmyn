@@ -27,6 +27,7 @@ export interface Product {
   oldPrice?: number | null;
   image: string;
   images?: string[];
+  imageKeys?: string[];
   sellerId: string;
   sellerName: string;
   sellerVerified: boolean;

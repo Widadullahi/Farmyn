@@ -14,6 +14,7 @@ interface AppContextValue extends AppState {
   logout: () => Promise<void>;
   addProduct: (input: ProductInput) => Promise<Result>;
   updateProduct: (id: string, input: Omit<ProductInput, "images"> & { images?: string[] }) => Promise<Result>;
+  deleteProduct: (id: string) => Promise<Result>;
   uploadPhoto: (file: File) => Promise<{ image: string; preview: string }>;
   updateSellerProfile: (patch: Partial<User>) => Promise<Result>;
   sendChatMessage: (id: string, message: string, productId?: string) => Promise<Result>;
@@ -47,7 +48,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return <AppContext.Provider value={{ ...state, currentUser, isHydrated, serviceError, categories: [...allCategories],
     registerUser: input => mutate("/auth/register", input), confirmRegistration: (email, code) => mutate("/auth/confirm", { email, code }), login: (email, password) => mutate("/auth/login", { email, password }),
     logout: async () => { const r = await mutate("/auth/logout", {}); if (!r.ok) toast.error(r.message); },
-    addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), uploadPhoto: async file => {
+    addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), deleteProduct: id => mutate(`/products/${encodeURIComponent(id)}`, undefined, "DELETE"), uploadPhoto: async file => {
       const intent = await api<{ image: string; preview: string; uploadUrl: string }>("/uploads", { contentType: file.type, size: file.size });
       const response = await fetch(intent.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file, signal: AbortSignal.timeout(60000) });
       if (!response.ok) throw new Error("The photo could not be uploaded. Please try again.");
