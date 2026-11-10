@@ -36,7 +36,7 @@ const categories = [
 ];
 
 export default function Home() {
-  const { products, banners } = useApp();
+  const { products, banners, isHydrated } = useApp();
   const banner = banners.find(item => item.placement === "homepage");
   return <div className="min-h-screen bg-background">
     <Navbar />
@@ -60,7 +60,7 @@ export default function Home() {
 
       <section className="container pb-20"><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Browse categories</p><h2 className="mt-2 text-3xl font-bold">From the farm to your search</h2></div><Link href="/marketplace" className="hidden items-center gap-1 text-sm font-semibold text-primary sm:flex">See all categories <ChevronRight className="h-4 w-4" /></Link></div><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{categories.map(({name,icon:Icon,color}) => <Link key={name} href={`/marketplace?category=${encodeURIComponent(name)}`} className="group flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"><span className={`flex h-12 w-12 items-center justify-center rounded-xl ${color}`}><Icon className="h-6 w-6" /></span><span className="flex-1 font-semibold">{name}</span><ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" /></Link>)}</div></section>
 
-      <section className="relative z-10 border-y bg-muted/30 py-16"><div className="container"><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Latest listings</p><h2 className="mt-2 text-3xl font-bold">Fresh from local sellers</h2></div><Link href="/marketplace" className="shrink-0 text-sm font-semibold text-primary">View all</Link></div>{products.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{[...products].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0,4).map(product => <ProductCard key={product.id} product={product} />)}</div> : <div className="mt-8 rounded-2xl border border-dashed bg-card p-10 text-center text-sm text-muted-foreground">Listings will appear here when sellers publish them.</div>}</div></section>
+      <section className="relative z-10 border-y bg-muted/30 py-16"><div className="container"><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Latest listings</p><h2 className="mt-2 text-3xl font-bold">Fresh from local sellers</h2></div><Link href="/marketplace" className="shrink-0 text-sm font-semibold text-primary">View all</Link></div>{!isHydrated ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-80 animate-pulse rounded-2xl border bg-card" />)}</div> : products.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{[...products].sort((a, b) => Number(b.featured) - Number(a.featured) || String(b.createdAt || "").localeCompare(String(a.createdAt || ""))).slice(0,4).map(product => <ProductCard key={product.id} product={product} />)}</div> : <div className="mt-8 rounded-2xl border border-dashed bg-card p-10 text-center text-sm text-muted-foreground">Listings will appear here when sellers publish them.</div>}</div></section>
 
       <div id="how-it-works"><MarketplaceJourney /></div>
 

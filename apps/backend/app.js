@@ -137,7 +137,7 @@ function createApp(config = {}, dependencies = {}) {
     if (v.images.some(key => !key.startsWith(`products/${req.user.id}/`))) throw error(403, 'Upload photos from your own account.');
     const photos = await Promise.all(v.images.map(key => s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }))));
     if (photos.some(photo => photo.Metadata?.owner !== req.user.id || !['image/jpeg', 'image/png', 'image/webp'].includes(photo.ContentType) || !photo.ContentLength || photo.ContentLength > 3 * 1024 * 1024)) throw error(400, 'Upload valid product photos first.');
-    const data = { ...v, image: v.images[0], id: crypto.randomUUID(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
+    const data = { ...v, image: v.images[0], id: crypto.randomUUID(), createdAt: new Date().toISOString(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
     await store.put({ pk: 'PRODUCT', sk: data.id, data }, 'attribute_not_exists(pk)'); await activity('listing.created', req.user, { productId: data.id, productName: data.name }); res.status(201).json({ message: 'Product published.' });
   }));
   app.patch('/api/products/:id', auth('seller'), wrap(async (req, res) => {

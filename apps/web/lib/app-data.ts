@@ -20,6 +20,7 @@ export interface User {
 
 export interface Product {
   id: string;
+  createdAt?: string;
   name: string;
   category: string;
   price: number;
