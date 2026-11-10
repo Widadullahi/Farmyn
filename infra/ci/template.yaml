@@ -9,7 +9,10 @@ Description: >-
 Parameters:
   Repository:
     Type: String
-    Default: Widadullahi/Farmyn
+    # The repo uses GitHub's immutable OIDC subjects (owner@id/repo@id), so the
+    # token's sub is repo:Widadullahi@156221762/Farmyn@1175957672:ref:refs/heads/main.
+    # Check with: gh api repos/Widadullahi/Farmyn/actions/oidc/customization/sub
+    Default: Widadullahi@156221762/Farmyn@1175957672
   Branch:
     Type: String
     Default: main
