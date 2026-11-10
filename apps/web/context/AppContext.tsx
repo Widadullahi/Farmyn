@@ -15,7 +15,7 @@ interface AppContextValue extends AppState {
   addProduct: (input: ProductInput) => Promise<Result>;
   updateProduct: (id: string, input: Omit<ProductInput, "images"> & { images?: string[] }) => Promise<Result>;
   uploadPhoto: (file: File) => Promise<{ image: string; preview: string }>;
-  updateSellerProfile: (patch: Partial<User>) => Promise<void>;
+  updateSellerProfile: (patch: Partial<User>) => Promise<Result>;
   sendChatMessage: (id: string, message: string, productId?: string) => Promise<Result>;
 }
 const AppContext = createContext<AppContextValue | null>(null);
@@ -52,7 +52,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(intent.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file, signal: AbortSignal.timeout(60000) });
       if (!response.ok) throw new Error("The photo could not be uploaded. Please try again.");
       return { image: intent.image, preview: intent.preview };
-    }, updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
+    }, updateSellerProfile: patch => mutate("/profile", patch, "PATCH"),
     sendChatMessage: (receiverId, message, productId) => mutate("/messages", { receiverId, message, ...(productId ? { productId } : {}) })
   }}>
     {serviceError && <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">{serviceError}</div>}
