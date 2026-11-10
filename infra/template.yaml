@@ -54,6 +54,14 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - !Ref WebOrigin
+            AllowedMethods: [PUT]
+            AllowedHeaders: ['*']
+            ExposedHeaders: [ETag]
+            MaxAge: 600
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true

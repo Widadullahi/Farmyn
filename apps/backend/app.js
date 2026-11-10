@@ -1,13 +1,12 @@
 const express = require('express');
 const helmet = require('helmet');
 const crypto = require('node:crypto');
-const { z, text, email, registration, product, productUpdate } = require('./validation');
+const { z, text, email, registration, product, productUpdate, uploadRequest } = require('./validation');
 const { error, hash } = require('./utils');
 const { Store } = require('./store');
 const { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand, GetUserCommand, ForgotPasswordCommand, ConfirmForgotPasswordCommand, ResendConfirmationCodeCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const sharp = require('sharp');
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const publicUser = u => ({ id: u.id, username: u.username, name: u.name, role: u.role, storeName: u.storeName, location: u.location, bio: u.bio, verified: u.verified, emailVerified: true, joinedAt: u.joinedAt });
 const referralCodeFor = id => hash(`farmyn-referral:${id}`).slice(0, 8).toUpperCase();
@@ -34,7 +33,9 @@ function createApp(config = {}, dependencies = {}) {
   const app = express(), ready = Boolean(config.table && config.clientId && config.bucket && config.webUrl);
   const store = dependencies.store || (ready ? new Store(config.table) : null);
   const cognito = dependencies.cognito || new CognitoIdentityProviderClient({});
-  const s3 = dependencies.s3 || new S3Client({});
+  // Presigned PUTs must not carry an empty-body checksum; the browser supplies
+  // the image body after the URL is signed.
+  const s3 = dependencies.s3 || new S3Client({ requestChecksumCalculation: 'WHEN_REQUIRED' });
   const cookie = (value, age) => `farmyn_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${config.webUrl?.startsWith('https:') ? '; Secure' : ''}`;
   const adminCookie = (value, age) => `farmyn_admin=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${config.webUrl?.startsWith('https:') ? '; Secure' : ''}`;
   app.disable('x-powered-by'); app.use(helmet());
@@ -123,21 +124,19 @@ function createApp(config = {}, dependencies = {}) {
     const activeBanners = banners.map(r => r.data).filter(b => b.status === 'active' && Date.parse(b.startsAt) <= now && Date.parse(b.endsAt) > now).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     res.json({ currentUserId: user?.id || null, users: [...people.values()], products: listing, banners: activeBanners, chatMessages: messages.map(r => r.data).sort((a, b) => a.createdAt.localeCompare(b.createdAt)) });
   }));
-  app.post('/api/uploads', auth('seller'), express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '3mb' }), wrap(async (req, res) => {
-    await throttle(req, 'upload', 30); if (!Buffer.isBuffer(req.body)) throw error(400, 'Choose a JPEG, PNG or WebP photo under 3 MB.');
-    const bytes = req.body;
-    const raster = bytes.subarray(0, 3).equals(Buffer.from([255, 216, 255])) || bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) || (bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP');
-    if (!raster) throw error(400, 'Choose a valid JPEG, PNG or WebP photo.');
-    let image; try { image = await sharp(req.body, { limitInputPixels: 16000000, animated: false }).rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 85 }).toBuffer(); } catch { throw error(400, 'This photo could not be read. Choose a valid image.'); }
-    const key = `products/${req.user.id}/${crypto.randomUUID()}.jpg`;
-    await s3.send(new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: image, ContentType: 'image/jpeg', ServerSideEncryption: 'AES256', Metadata: { owner: req.user.id } }));
-    res.status(201).json({ image: key, preview: await photoUrl(key) });
+  app.post('/api/uploads', auth('seller'), wrap(async (req, res) => {
+    await throttle(req, 'upload', 30);
+    const v = uploadRequest.parse(req.body);
+    const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[v.contentType];
+    const key = `products/${req.user.id}/${crypto.randomUUID()}.${extension}`;
+    const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: v.contentType, ContentLength: v.size, Metadata: { owner: req.user.id } }), { expiresIn: 300 });
+    res.status(201).json({ image: key, preview: await photoUrl(key), uploadUrl });
   }));
   app.post('/api/products', auth('seller'), wrap(async (req, res) => {
     await throttle(req, 'product', 20); const v = product.parse(req.body);
     if (v.images.some(key => !key.startsWith(`products/${req.user.id}/`))) throw error(403, 'Upload photos from your own account.');
     const photos = await Promise.all(v.images.map(key => s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }))));
-    if (photos.some(photo => photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg')) throw error(400, 'Upload valid product photos first.');
+    if (photos.some(photo => photo.Metadata?.owner !== req.user.id || !['image/jpeg', 'image/png', 'image/webp'].includes(photo.ContentType) || !photo.ContentLength || photo.ContentLength > 3 * 1024 * 1024)) throw error(400, 'Upload valid product photos first.');
     const data = { ...v, image: v.images[0], id: crypto.randomUUID(), sellerId: req.user.id, sellerName: req.user.storeName || req.user.name, sellerVerified: req.user.verified, inStock: true, rating: 0, reviewCount: 0, featured: false };
     await store.put({ pk: 'PRODUCT', sk: data.id, data }, 'attribute_not_exists(pk)'); await activity('listing.created', req.user, { productId: data.id, productName: data.name }); res.status(201).json({ message: 'Product published.' });
   }));
@@ -150,7 +149,7 @@ function createApp(config = {}, dependencies = {}) {
     if (v.images) {
       if (v.images.some(key => !key.startsWith(`products/${req.user.id}/`))) throw error(403, 'Upload photos from your own account.');
       const photos = await Promise.all(v.images.map(key => s3.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }))));
-      if (photos.some(photo => photo.Metadata?.owner !== req.user.id || photo.ContentType !== 'image/jpeg')) throw error(400, 'Upload valid product photos first.');
+      if (photos.some(photo => photo.Metadata?.owner !== req.user.id || !['image/jpeg', 'image/png', 'image/webp'].includes(photo.ContentType) || !photo.ContentLength || photo.ContentLength > 3 * 1024 * 1024)) throw error(400, 'Upload valid product photos first.');
     }
     const previous = record.data;
     const images = v.images || previous.images || [previous.image].filter(Boolean);

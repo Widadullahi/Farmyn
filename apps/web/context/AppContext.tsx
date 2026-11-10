@@ -47,7 +47,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return <AppContext.Provider value={{ ...state, currentUser, isHydrated, serviceError, categories: [...allCategories],
     registerUser: input => mutate("/auth/register", input), confirmRegistration: (email, code) => mutate("/auth/confirm", { email, code }), login: (email, password) => mutate("/auth/login", { email, password }),
     logout: async () => { const r = await mutate("/auth/logout", {}); if (!r.ok) toast.error(r.message); },
-    addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), uploadPhoto: file => api("/uploads", file), updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
+    addProduct: input => mutate("/products", input), updateProduct: (id, input) => mutate(`/products/${encodeURIComponent(id)}`, input, "PATCH"), uploadPhoto: async file => {
+      const intent = await api<{ image: string; preview: string; uploadUrl: string }>("/uploads", { contentType: file.type, size: file.size });
+      const response = await fetch(intent.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file, signal: AbortSignal.timeout(60000) });
+      if (!response.ok) throw new Error("The photo could not be uploaded. Please try again.");
+      return { image: intent.image, preview: intent.preview };
+    }, updateSellerProfile: patch => notify("/profile", patch, "PATCH"),
     sendChatMessage: (receiverId, message, productId) => mutate("/messages", { receiverId, message, ...(productId ? { productId } : {}) })
   }}>
     {serviceError && <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">{serviceError}</div>}

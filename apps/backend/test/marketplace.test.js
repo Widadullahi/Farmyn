@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { email, phone, product, registration } = require('../validation');
+const { email, phone, product, registration, uploadRequest } = require('../validation');
 const { error, hash } = require('../utils');
 
 test('listing validation accepts marketplace fields and rejects remote images', () => {
@@ -9,7 +9,14 @@ test('listing validation accepts marketplace fields and rejects remote images', 
   assert.equal(product.safeParse({ ...listing, images: ['https://example.com/photo.jpg'] }).success, false);
   assert.equal(product.safeParse({ ...listing, images: [] }).success, false);
   assert.equal(product.safeParse({ ...listing, images: Array(9).fill(listing.images[0]) }).success, false);
+  assert.equal(product.safeParse({ ...listing, images: ['products/seller-a/550e8400-e29b-41d4-a716-446655440000.png'] }).success, true);
   assert.equal(product.safeParse({ ...listing, price: -1 }).success, false);
+});
+
+test('upload intents accept supported photos under 3 MB only', () => {
+  assert.equal(uploadRequest.safeParse({ contentType: 'image/png', size: 1024 }).success, true);
+  assert.equal(uploadRequest.safeParse({ contentType: 'text/html', size: 1024 }).success, false);
+  assert.equal(uploadRequest.safeParse({ contentType: 'image/jpeg', size: 4 * 1024 * 1024 }).success, false);
 });
 
 test('registration creates one account type without a buyer or seller choice', () => {
